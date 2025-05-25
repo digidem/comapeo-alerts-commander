@@ -22,6 +22,16 @@ interface AlertData {
   };
 }
 
+interface MapAlert {
+  id: string;
+  name: string;
+  coordinates: [number, number];
+  projectName: string;
+  detectionDateStart: string;
+  detectionDateEnd: string;
+  sourceId: string;
+}
+
 class ApiService {
   private getBaseUrl(serverName: string): string {
     // Ensure the server name includes protocol
@@ -83,7 +93,7 @@ class ApiService {
     const baseUrl = this.getBaseUrl(credentials.serverName);
     
     try {
-      const response = await fetch(`${baseUrl}/projects/${projectId}/alerts`, {
+      const response = await fetch(`${baseUrl}/projects/${projectId}/remoteDetectionAlerts`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${credentials.bearerToken}`,
@@ -110,6 +120,71 @@ class ApiService {
       
       throw error;
     }
+  }
+
+  async fetchAlerts(credentials: Credentials, projects: Project[]): Promise<MapAlert[]> {
+    const alerts: MapAlert[] = [];
+    
+    for (const project of projects) {
+      try {
+        const baseUrl = this.getBaseUrl(credentials.serverName);
+        const response = await fetch(`${baseUrl}/projects/${project.projectId}/remoteDetectionAlerts`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${credentials.bearerToken}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          const projectAlerts = Array.isArray(data) ? data : data.alerts || [];
+          
+          projectAlerts.forEach((alert: any) => {
+            if (alert.geometry && alert.geometry.coordinates) {
+              alerts.push({
+                id: alert.id || `${project.projectId}-${Date.now()}`,
+                name: alert.metadata?.alert_type || 'Alert',
+                coordinates: alert.geometry.coordinates,
+                projectName: project.name,
+                detectionDateStart: alert.detectionDateStart || '',
+                detectionDateEnd: alert.detectionDateEnd || '',
+                sourceId: alert.sourceId || ''
+              });
+            }
+          });
+        }
+      } catch (error) {
+        console.error(`Error fetching alerts for project ${project.projectId}:`, error);
+        // Continue with other projects
+      }
+    }
+
+    // Add demo alerts for development
+    if (credentials.serverName.includes('demo') || alerts.length === 0) {
+      alerts.push(
+        {
+          id: 'demo-alert-1',
+          name: 'fire-detection',
+          coordinates: [-74.006, 40.7128],
+          projectName: 'Demo Project 1',
+          detectionDateStart: '2025-01-01T00:00:00Z',
+          detectionDateEnd: '2025-01-02T00:00:00Z',
+          sourceId: 'demo-source-1'
+        },
+        {
+          id: 'demo-alert-2',
+          name: 'deforestation',
+          coordinates: [-0.1278, 51.5074],
+          projectName: 'Demo Project 2',
+          detectionDateStart: '2025-01-01T00:00:00Z',
+          detectionDateEnd: '2025-01-02T00:00:00Z',
+          sourceId: 'demo-source-2'
+        }
+      );
+    }
+
+    return alerts;
   }
 }
 

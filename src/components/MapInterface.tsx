@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,6 +7,8 @@ import { BottomSheet } from '@/components/ui/bottom-sheet';
 import { MapPin, Search, LogOut, Settings, Download } from 'lucide-react';
 import { toast } from 'sonner';
 import { usePWAInstall } from '@/hooks/usePWAInstall';
+import { AlertPopup } from '@/components/AlertPopup';
+import { apiService } from '@/services/apiService';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
@@ -20,12 +21,24 @@ interface MapInterfaceProps {
   onCoordinatesSet: (coordinates: Coordinates) => void;
   onLogout: () => void;
   coordinates: Coordinates | null;
+  credentials?: any;
+  projects?: any[];
+}
+
+interface MapAlert {
+  id: string;
+  name: string;
+  coordinates: [number, number];
+  projectName: string;
+  detectionDateStart: string;
+  detectionDateEnd: string;
+  sourceId: string;
 }
 
 // Default Mapbox token
 const DEFAULT_MAPBOX_TOKEN = 'pk.eyJ1IjoibHVhbmRybyIsImEiOiJjanY2djRpdnkwOWdqM3lwZzVuaGIxa3VsIn0.jamcK2t2I1j3TXkUQFIsjQ';
 
-export const MapInterface = ({ onCoordinatesSet, onLogout, coordinates }: MapInterfaceProps) => {
+export const MapInterface = ({ onCoordinatesSet, onLogout, coordinates, credentials, projects = [] }: MapInterfaceProps) => {
   const [selectedCoords, setSelectedCoords] = useState<Coordinates | null>(coordinates);
   const [manualLat, setManualLat] = useState('');
   const [manualLng, setManualLng] = useState('');
@@ -36,9 +49,13 @@ export const MapInterface = ({ onCoordinatesSet, onLogout, coordinates }: MapInt
   const [showTokenInput, setShowTokenInput] = useState(false);
   const [isMapLoaded, setIsMapLoaded] = useState(false);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  const [alerts, setAlerts] = useState<MapAlert[]>([]);
+  const [selectedAlert, setSelectedAlert] = useState<MapAlert | null>(null);
+  const [isLoadingAlerts, setIsLoadingAlerts] = useState(false);
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<mapboxgl.Map | null>(null);
   const markerRef = useRef<mapboxgl.Marker | null>(null);
+  const alertMarkersRef = useRef<mapboxgl.Marker[]>([]);
   const searchInputRef = useRef<HTMLInputElement>(null);
   
   const { isInstallable, installApp } = usePWAInstall();
@@ -84,6 +101,94 @@ export const MapInterface = ({ onCoordinatesSet, onLogout, coordinates }: MapInt
     }
   }, [coordinates]);
 
+  // Load alerts when map loads and credentials are available
+  useEffect(() => {
+    if (isMapLoaded && credentials && projects.length > 0) {
+      loadAlerts();
+    }
+  }, [isMapLoaded, credentials, projects]);
+
+  const loadAlerts = async () => {
+    if (!credentials || projects.length === 0) return;
+    
+    setIsLoadingAlerts(true);
+    try {
+      const fetchedAlerts = await apiService.fetchAlerts(credentials, projects);
+      setAlerts(fetchedAlerts);
+      
+      // Add alert markers to map
+      if (mapInstanceRef.current) {
+        addAlertMarkers(fetchedAlerts);
+      }
+    } catch (error) {
+      console.error('Error loading alerts:', error);
+      toast.error('Failed to load existing alerts');
+    } finally {
+      setIsLoadingAlerts(false);
+    }
+  };
+
+  const addAlertMarkers = (alertList: MapAlert[]) => {
+    if (!mapInstanceRef.current) return;
+
+    // Clear existing alert markers
+    alertMarkersRef.current.forEach(marker => marker.remove());
+    alertMarkersRef.current = [];
+
+    // Add new alert markers
+    alertList.forEach(alert => {
+      const el = document.createElement('div');
+      el.className = 'alert-marker';
+      el.style.cssText = `
+        background-color: #ef4444;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        border: 2px solid white;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        position: relative;
+      `;
+
+      // Add label
+      const label = document.createElement('div');
+      label.textContent = alert.name;
+      label.style.cssText = `
+        position: absolute;
+        top: -30px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0,0,0,0.8);
+        color: white;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 12px;
+        white-space: nowrap;
+        pointer-events: none;
+      `;
+      el.appendChild(label);
+
+      el.addEventListener('click', () => {
+        setSelectedAlert(alert);
+        
+        // Haptic feedback
+        if ('vibrate' in navigator) {
+          navigator.vibrate(50);
+        }
+      });
+
+      const marker = new mapboxgl.Marker(el)
+        .setLngLat(alert.coordinates)
+        .addTo(mapInstanceRef.current!);
+
+      alertMarkersRef.current.push(marker);
+    });
+  };
+
+  // Update map initialization to include alert loading
   useEffect(() => {
     if (!mapRef.current || !mapboxToken) return;
 
@@ -161,6 +266,7 @@ export const MapInterface = ({ onCoordinatesSet, onLogout, coordinates }: MapInt
       mapInstanceRef.current = map;
 
       return () => {
+        alertMarkersRef.current.forEach(marker => marker.remove());
         if (markerRef.current) {
           markerRef.current.remove();
         }
@@ -556,6 +662,14 @@ export const MapInterface = ({ onCoordinatesSet, onLogout, coordinates }: MapInt
             <p className="text-sm">Tap anywhere on the map to select coordinates</p>
           </div>
         </div>
+      )}
+
+      {/* Alert Popup */}
+      {selectedAlert && (
+        <AlertPopup
+          alert={selectedAlert}
+          onClose={() => setSelectedAlert(null)}
+        />
       )}
     </div>
   );

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { LoginForm } from '@/components/LoginForm';
 import { MapInterface } from '@/components/MapInterface';
@@ -28,6 +29,7 @@ const Index = () => {
   const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
   const [coordinates, setCoordinates] = useState<Coordinates | null>(null);
   const [currentStep, setCurrentStep] = useState<'auth' | 'map' | 'projects' | 'alert'>('auth');
+  const [alertsRefreshKey, setAlertsRefreshKey] = useState(0);
 
   useEffect(() => {
     // Check for stored credentials
@@ -77,6 +79,14 @@ const Index = () => {
     setCurrentStep('alert');
   };
 
+  const handleAlertSuccess = () => {
+    setCurrentStep('map');
+    setCoordinates(null);
+    setSelectedProjects([]);
+    // Trigger alerts refresh on map
+    setAlertsRefreshKey(prev => prev + 1);
+  };
+
   const renderCurrentStep = () => {
     switch (currentStep) {
       case 'auth':
@@ -87,6 +97,9 @@ const Index = () => {
             onCoordinatesSet={handleCoordinatesSet}
             onLogout={handleLogout}
             coordinates={coordinates}
+            credentials={credentials}
+            projects={projects}
+            key={alertsRefreshKey}
           />
         );
       case 'projects':
@@ -108,11 +121,7 @@ const Index = () => {
             credentials={credentials!}
             projects={projects}
             onBack={() => setCurrentStep('projects')}
-            onSuccess={() => {
-              setCurrentStep('map');
-              setCoordinates(null);
-              setSelectedProjects([]);
-            }}
+            onSuccess={handleAlertSuccess}
           />
         );
       default:
