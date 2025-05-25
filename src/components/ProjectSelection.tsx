@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -77,7 +76,7 @@ export const ProjectSelection = ({
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
         <Card className="w-full max-w-md">
           <CardContent className="pt-6">
             <div className="text-center space-y-4">
@@ -90,7 +89,7 @@ export const ProjectSelection = ({
     );
   }
 
-  // No projects state
+  // No projects state - hide map interface entirely
   if (projects.length === 0) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
@@ -106,14 +105,14 @@ export const ProjectSelection = ({
               No projects are available for your account. Please contact your administrator for access.
             </p>
             <div className="space-y-2">
-              <Button onClick={onBack} variant="outline" className="w-full">
+              <Button onClick={onBack} variant="outline" className="w-full h-12 text-base">
                 <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Map
+                <span className="hidden sm:inline">Back to Map</span>
               </Button>
               {onLogout && (
-                <Button onClick={onLogout} variant="outline" className="w-full">
+                <Button onClick={onLogout} variant="outline" className="w-full h-12 text-base">
                   <LogOut className="w-4 h-4 mr-2" />
-                  Logout
+                  <span className="hidden sm:inline">Logout</span>
                 </Button>
               )}
             </div>
@@ -124,72 +123,82 @@ export const ProjectSelection = ({
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
-      <div className="max-w-2xl mx-auto">
-        <div className="flex justify-between items-center mb-6">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      {/* Mobile-first header */}
+      <div 
+        className="bg-white/95 backdrop-blur-sm border-b border-gray-200 px-4 py-3"
+        style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top))' }}
+      >
+        <div className="flex justify-between items-center">
           <Button variant="outline" onClick={onBack} className="flex items-center gap-2">
             <ArrowLeft className="w-4 h-4" />
-            Back to Map
+            <span className="hidden sm:inline">Back to Map</span>
           </Button>
           {onLogout && (
             <Button variant="outline" onClick={onLogout} className="flex items-center gap-2">
               <LogOut className="w-4 h-4" />
-              Logout
+              <span className="hidden sm:inline">Logout</span>
             </Button>
           )}
         </div>
+      </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-2xl font-bold text-center">Select Projects</CardTitle>
-            <p className="text-center text-gray-600">
-              Choose which projects to send the alert to
-            </p>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-3">
-              {projects.map((project) => (
-                <div key={project.projectId} className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50">
-                  <Checkbox
-                    id={project.projectId}
-                    checked={selectedProjects.includes(project.projectId)}
-                    onCheckedChange={() => handleProjectToggle(project.projectId)}
-                  />
-                  <Label
-                    htmlFor={project.projectId}
-                    className="flex-1 text-sm font-medium cursor-pointer"
-                  >
-                    {project.name}
-                  </Label>
-                </div>
-              ))}
-            </div>
-
-            {selectedProjects.length > 0 && (
-              <div className="mt-6 p-4 bg-green-50 rounded-lg">
-                <p className="text-sm text-green-700 mb-3">
-                  Selected {selectedProjects.length} project{selectedProjects.length !== 1 ? 's' : ''}:
-                </p>
-                <ul className="text-sm text-green-600 space-y-1">
-                  {selectedProjects.map(projectId => {
-                    const project = projects.find(p => p.projectId === projectId);
-                    return (
-                      <li key={projectId}>• {project?.name}</li>
-                    );
-                  })}
-                </ul>
+      {/* Content area with mobile padding */}
+      <div className="p-4 pb-safe-area-inset-bottom">
+        <div className="max-w-2xl mx-auto">
+          <Card className="mt-4">
+            <CardHeader>
+              <CardTitle className="text-xl md:text-2xl font-bold text-center">Select Projects</CardTitle>
+              <p className="text-center text-gray-600 text-sm md:text-base">
+                Choose which projects to send the alert to
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-3">
+                {projects.map((project) => (
+                  <div key={project.projectId} className="flex items-center space-x-3 p-4 border rounded-lg hover:bg-gray-50 transition-colors min-h-[60px]">
+                    <Checkbox
+                      id={project.projectId}
+                      checked={selectedProjects.includes(project.projectId)}
+                      onCheckedChange={() => handleProjectToggle(project.projectId)}
+                      className="scale-125"
+                    />
+                    <Label
+                      htmlFor={project.projectId}
+                      className="flex-1 text-sm md:text-base font-medium cursor-pointer"
+                    >
+                      {project.name}
+                    </Label>
+                  </div>
+                ))}
               </div>
-            )}
 
-            <Button 
-              onClick={handleContinue} 
-              className="w-full mt-6"
-              disabled={selectedProjects.length === 0}
-            >
-              Continue to Alert Form ({selectedProjects.length} selected)
-            </Button>
-          </CardContent>
-        </Card>
+              {selectedProjects.length > 0 && (
+                <div className="mt-6 p-4 bg-green-50 rounded-lg">
+                  <p className="text-sm text-green-700 mb-3">
+                    Selected {selectedProjects.length} project{selectedProjects.length !== 1 ? 's' : ''}:
+                  </p>
+                  <ul className="text-sm text-green-600 space-y-1">
+                    {selectedProjects.map(projectId => {
+                      const project = projects.find(p => p.projectId === projectId);
+                      return (
+                        <li key={projectId}>• {project?.name}</li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              )}
+
+              <Button 
+                onClick={handleContinue} 
+                className="w-full mt-6 h-12 text-base"
+                disabled={selectedProjects.length === 0}
+              >
+                Continue to Alert Form ({selectedProjects.length} selected)
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );
