@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { LoginForm } from '@/components/LoginForm';
 import { MapInterface } from '@/components/MapInterface';
@@ -98,6 +97,7 @@ const Index = () => {
             onBack={() => setCurrentStep('map')}
             projects={projects}
             setProjects={setProjects}
+            onLogout={handleLogout}
           />
         );
       case 'alert':
