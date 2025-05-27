@@ -1,15 +1,19 @@
-import { useState, useEffect, useRef } from 'react';
+
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { BottomSheet } from '@/components/ui/bottom-sheet';
-import { MapPin, Search, LogOut, Settings, Download } from 'lucide-react';
+import { MapPin, LogOut, Settings, Download } from 'lucide-react';
 import { toast } from 'sonner';
 import { usePWAInstall } from '@/hooks/usePWAInstall';
 import { AlertPopup } from '@/components/AlertPopup';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
-import { apiService } from '@/services/apiService';
+import { MapTokenSetup } from '@/components/MapTokenSetup';
+import { SearchBar } from '@/components/SearchBar';
+import { CoordinateDisplay } from '@/components/CoordinateDisplay';
+import { ManualCoordinateEntry } from '@/components/ManualCoordinateEntry';
+import { MapContainer } from '@/components/MapContainer';
+import { useMapAlerts } from '@/hooks/useMapAlerts';
+import { useMapSearch } from '@/hooks/useMapSearch';
+import { useMapInteraction } from '@/hooks/useMapInteraction';
 import { useTranslation } from 'react-i18next';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -27,39 +31,15 @@ interface MapInterfaceProps {
   projects?: any[];
 }
 
-interface MapAlert {
-  id: string;
-  name: string;
-  coordinates: [number, number];
-  projectName: string;
-  detectionDateStart: string;
-  detectionDateEnd: string;
-  sourceId: string;
-}
-
 // Default Mapbox token
 const DEFAULT_MAPBOX_TOKEN = 'pk.eyJ1IjoibHVhbmRybyIsImEiOiJjanY2djRpdnkwOWdqM3lwZzVuaGIxa3VsIn0.jamcK2t2I1j3TXkUQFIsjQ';
 
 export const MapInterface = ({ onCoordinatesSet, onLogout, coordinates, credentials, projects = [] }: MapInterfaceProps) => {
   const { t } = useTranslation();
   const [selectedCoords, setSelectedCoords] = useState<Coordinates | null>(coordinates);
-  const [manualLat, setManualLat] = useState('');
-  const [manualLng, setManualLng] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [isSearching, setIsSearching] = useState(false);
   const [showManualEntry, setShowManualEntry] = useState(false);
   const [mapboxToken, setMapboxToken] = useState('');
   const [showTokenInput, setShowTokenInput] = useState(false);
-  const [isMapLoaded, setIsMapLoaded] = useState(false);
-  const [recentSearches, setRecentSearches] = useState<string[]>([]);
-  const [alerts, setAlerts] = useState<MapAlert[]>([]);
-  const [selectedAlert, setSelectedAlert] = useState<MapAlert | null>(null);
-  const [isLoadingAlerts, setIsLoadingAlerts] = useState(false);
-  const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstanceRef = useRef<mapboxgl.Map | null>(null);
-  const markerRef = useRef<mapboxgl.Marker | null>(null);
-  const alertMarkersRef = useRef<mapboxgl.Marker[]>([]);
-  const searchInputRef = useRef<HTMLInputElement>(null);
   
   const { isInstallable, installApp } = usePWAInstall();
 
@@ -75,34 +55,40 @@ export const MapInterface = ({ onCoordinatesSet, onLogout, coordinates, credenti
     }
   }, []);
 
-  // Load recent searches from localStorage
-  useEffect(() => {
-    const stored = localStorage.getItem('recentSearches');
-    if (stored) {
-      try {
-        setRecentSearches(JSON.parse(stored));
-      } catch (error) {
-        console.error('Error loading recent searches:', error);
-      }
-    }
-  }, []);
-
-  // Auto-focus search input
-  useEffect(() => {
-    if (isMapLoaded && searchInputRef.current) {
-      setTimeout(() => {
-        searchInputRef.current?.focus();
-      }, 300);
-    }
-  }, [isMapLoaded]);
-
   useEffect(() => {
     if (coordinates) {
       setSelectedCoords(coordinates);
-      setManualLat(coordinates.lat.toString());
-      setManualLng(coordinates.lng.toString());
     }
   }, [coordinates]);
+
+  const handleCoordinatesChange = (coords: Coordinates) => {
+    setSelectedCoords(coords);
+  };
+
+  const { mapRef, mapInstanceRef, markerRef, isMapLoaded } = useMapInteraction(
+    mapboxToken,
+    selectedCoords,
+    handleCoordinatesChange
+  );
+
+  const {
+    alerts,
+    selectedAlert,
+    setSelectedAlert,
+    isLoadingAlerts,
+    loadAlerts,
+    cleanupMarkers
+  } = useMapAlerts(credentials, projects, mapInstanceRef.current);
+
+  const {
+    searchQuery,
+    setSearchQuery,
+    isSearching,
+    recentSearches,
+    searchInputRef,
+    handleSearch,
+    handleClearSearch
+  } = useMapSearch(mapInstanceRef.current, markerRef, handleCoordinatesChange);
 
   // Load alerts when map loads and credentials are available
   useEffect(() => {
@@ -111,207 +97,24 @@ export const MapInterface = ({ onCoordinatesSet, onLogout, coordinates, credenti
     }
   }, [isMapLoaded, credentials, projects]);
 
-  const loadAlerts = async () => {
-    if (!credentials || projects.length === 0) return;
-    
-    setIsLoadingAlerts(true);
-    try {
-      const fetchedAlerts = await apiService.fetchAlerts(credentials, projects);
-      setAlerts(fetchedAlerts);
-      
-      // Add alert markers to map
-      if (mapInstanceRef.current) {
-        addAlertMarkers(fetchedAlerts);
-      }
-    } catch (error) {
-      console.error('Error loading alerts:', error);
-      toast.error('Failed to load existing alerts');
-    } finally {
-      setIsLoadingAlerts(false);
-    }
-  };
-
-  const addAlertMarkers = (alertList: MapAlert[]) => {
-    if (!mapInstanceRef.current) return;
-
-    // Clear existing alert markers
-    alertMarkersRef.current.forEach(marker => marker.remove());
-    alertMarkersRef.current = [];
-
-    // Add new alert markers
-    alertList.forEach(alert => {
-      const el = document.createElement('div');
-      el.className = 'alert-marker';
-      el.style.cssText = `
-        background-color: #ef4444;
-        width: 24px;
-        height: 24px;
-        border-radius: 50%;
-        border: 2px solid white;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-        position: relative;
-      `;
-
-      // Add label
-      const label = document.createElement('div');
-      label.textContent = alert.name;
-      label.style.cssText = `
-        position: absolute;
-        top: -30px;
-        left: 50%;
-        transform: translateX(-50%);
-        background: rgba(0,0,0,0.8);
-        color: white;
-        padding: 2px 6px;
-        border-radius: 4px;
-        font-size: 12px;
-        white-space: nowrap;
-        pointer-events: none;
-      `;
-      el.appendChild(label);
-
-      el.addEventListener('click', () => {
-        setSelectedAlert(alert);
-        
-        // Haptic feedback
-        if ('vibrate' in navigator) {
-          navigator.vibrate(50);
-        }
-      });
-
-      const marker = new mapboxgl.Marker(el)
-        .setLngLat(alert.coordinates)
-        .addTo(mapInstanceRef.current!);
-
-      alertMarkersRef.current.push(marker);
-    });
-  };
-
-  // Update map initialization to include alert loading
+  // Cleanup on unmount
   useEffect(() => {
-    if (!mapRef.current || !mapboxToken) return;
-
-    try {
-      // Initialize Mapbox
-      mapboxgl.accessToken = mapboxToken;
-      
-      const map = new mapboxgl.Map({
-        container: mapRef.current,
-        style: 'mapbox://styles/mapbox/satellite-streets-v12',
-        center: selectedCoords ? [selectedCoords.lng, selectedCoords.lat] : [0, 0],
-        zoom: selectedCoords ? 10 : 2,
-        touchZoomRotate: true,
-        touchPitch: true
-      });
-
-      map.addControl(new mapboxgl.NavigationControl(), 'bottom-right');
-
-      map.on('load', () => {
-        setIsMapLoaded(true);
-      });
-
-      map.on('error', (e) => {
-        console.error('Mapbox error:', e);
-        toast.error(t('map.mapConfigError'));
-      });
-
-      map.on('click', (e) => {
-        const coords = {
-          lat: parseFloat(e.lngLat.lat.toFixed(6)),
-          lng: parseFloat(e.lngLat.lng.toFixed(6))
-        };
-        
-        setSelectedCoords(coords);
-        setManualLat(coords.lat.toString());
-        setManualLng(coords.lng.toString());
-        
-        // Haptic feedback on mobile
-        if ('vibrate' in navigator) {
-          navigator.vibrate(50);
-        }
-        
-        // Update marker with bounce animation
-        if (markerRef.current) {
-          markerRef.current.remove();
-        }
-        
-        markerRef.current = new mapboxgl.Marker({
-          color: '#ef4444',
-          scale: 1.2
-        })
-          .setLngLat([coords.lng, coords.lat])
-          .addTo(map);
-        
-        // Animate marker
-        setTimeout(() => {
-          if (markerRef.current) {
-            markerRef.current.getElement().style.transform = 'scale(1)';
-            markerRef.current.getElement().style.transition = 'transform 0.3s ease-out';
-          }
-        }, 100);
-        
-        toast.success(t('map.locationSelected', { lat: coords.lat, lng: coords.lng }));
-      });
-
-      // Add existing marker if coordinates exist
-      if (selectedCoords) {
-        markerRef.current = new mapboxgl.Marker({
-          color: '#ef4444'
-        })
-          .setLngLat([selectedCoords.lng, selectedCoords.lat])
-          .addTo(map);
-      }
-
-      mapInstanceRef.current = map;
-
-      return () => {
-        alertMarkersRef.current.forEach(marker => marker.remove());
-        if (markerRef.current) {
-          markerRef.current.remove();
-        }
-        map.remove();
-      };
-    } catch (error) {
-      console.error('Failed to initialize map:', error);
-      toast.error(t('map.mapConfigError'));
-    }
-  }, [mapboxToken, selectedCoords, t]);
-
-  const saveRecentSearch = (query: string) => {
-    const updated = [query, ...recentSearches.filter(s => s !== query)].slice(0, 3);
-    setRecentSearches(updated);
-    localStorage.setItem('recentSearches', JSON.stringify(updated));
-  };
+    return () => {
+      cleanupMarkers();
+    };
+  }, []);
 
   const handleTokenSubmit = () => {
-    if (!mapboxToken.trim()) {
-      toast.error(t('mapbox.enterValidToken'));
-      return;
-    }
     setShowTokenInput(false);
-    toast.success(t('mapbox.tokenSetSuccessfully'));
   };
 
-  const handleManualCoords = () => {
-    const lat = parseFloat(manualLat);
-    const lng = parseFloat(manualLng);
-    
-    if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
-      toast.error(t('manualCoords.invalidCoordinates'));
-      return;
-    }
-    
-    const coords = { lat, lng };
+  const handleManualCoords = (coords: Coordinates) => {
     setSelectedCoords(coords);
     
     // Update map center and marker
     if (mapInstanceRef.current) {
       mapInstanceRef.current.flyTo({
-        center: [lng, lat],
+        center: [coords.lng, coords.lat],
         zoom: 10
       });
       
@@ -322,78 +125,14 @@ export const MapInterface = ({ onCoordinatesSet, onLogout, coordinates, credenti
       markerRef.current = new mapboxgl.Marker({
         color: '#ef4444'
       })
-        .setLngLat([lng, lat])
+        .setLngLat([coords.lng, coords.lat])
         .addTo(mapInstanceRef.current);
     }
-    
-    toast.success(t('map.coordinatesSetManually', { lat, lng }));
-    setShowManualEntry(false);
-    
-    // Haptic feedback
-    if ('vibrate' in navigator) {
-      navigator.vibrate(100);
-    }
   };
 
-  const handleSearch = async () => {
-    if (!searchQuery.trim()) return;
-    
-    setIsSearching(true);
-    
-    try {
-      // Simulate geocoding - in a real app, you'd use a geocoding service
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Mock search results
-      const mockResults = {
-        'london': { lat: 51.5074, lng: -0.1278 },
-        'paris': { lat: 48.8566, lng: 2.3522 },
-        'new york': { lat: 40.7128, lng: -74.0060 },
-        'tokyo': { lat: 35.6762, lng: 139.6503 }
-      };
-      
-      const result = mockResults[searchQuery.toLowerCase() as keyof typeof mockResults];
-      
-      if (result) {
-        setSelectedCoords(result);
-        setManualLat(result.lat.toString());
-        setManualLng(result.lng.toString());
-        saveRecentSearch(searchQuery);
-        
-        // Update map center and marker
-        if (mapInstanceRef.current) {
-          mapInstanceRef.current.flyTo({
-            center: [result.lng, result.lat],
-            zoom: 10
-          });
-          
-          if (markerRef.current) {
-            markerRef.current.remove();
-          }
-          
-          markerRef.current = new mapboxgl.Marker({
-            color: '#ef4444'
-          })
-            .setLngLat([result.lng, result.lat])
-            .addTo(mapInstanceRef.current);
-        }
-        
-        toast.success(t('map.locationFound', { query: searchQuery, lat: result.lat, lng: result.lng }));
-        setSearchQuery('');
-      } else {
-        toast.error(t('map.locationNotFound'));
-      }
-    } catch (error) {
-      console.error('Search error:', error);
-      toast.error(t('map.searchFailed'));
-    } finally {
-      setIsSearching(false);
-    }
-  };
-
-  const handleClearSearch = () => {
-    setSearchQuery('');
-    searchInputRef.current?.focus();
+  const handleRecentSearchClick = (search: string) => {
+    setSearchQuery(search);
+    handleSearch();
   };
 
   const handleContinue = () => {
@@ -412,71 +151,24 @@ export const MapInterface = ({ onCoordinatesSet, onLogout, coordinates, credenti
 
   if (showTokenInput) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <MapPin className="w-5 h-5" />
-              {t('mapbox.title')}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="mapboxToken">{t('mapbox.token')}</Label>
-              <Input
-                id="mapboxToken"
-                type="password"
-                placeholder={t('mapbox.tokenPlaceholder')}
-                value={mapboxToken}
-                onChange={(e) => setMapboxToken(e.target.value)}
-              />
-              <p className="text-sm text-gray-600">
-                {t('mapbox.getTokenFrom')}{' '}
-                <a href="https://mapbox.com/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                  mapbox.com
-                </a>
-              </p>
-            </div>
-            <Button onClick={handleTokenSubmit} className="w-full">
-              {t('mapbox.initializeMap')}
-            </Button>
-            <Button variant="outline" onClick={onLogout} className="w-full">
-              {t('mapbox.backToLogin')}
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
+      <MapTokenSetup
+        mapboxToken={mapboxToken}
+        setMapboxToken={setMapboxToken}
+        onTokenSubmit={handleTokenSubmit}
+        onLogout={onLogout}
+      />
     );
   }
 
   return (
     <div className="relative h-screen w-screen overflow-hidden">
-      {/* Full-screen map */}
-      <div ref={mapRef} className="absolute inset-0" />
-      
-      {/* Loading overlay with skeleton */}
-      {!isMapLoaded && (
-        <div className="absolute inset-0 bg-white flex flex-col z-20">
-          {/* Header skeleton */}
-          <div className="h-16 bg-gray-100 border-b flex items-center px-4">
-            <div className="h-6 bg-gray-200 rounded w-32 skeleton"></div>
-          </div>
-          
-          {/* Search skeleton */}
-          <div className="p-4">
-            <div className="h-12 bg-gray-200 rounded-2xl skeleton"></div>
-          </div>
-          
-          {/* Map skeleton */}
-          <div className="flex-1 bg-gray-100 flex items-center justify-center">
-            <div className="text-center space-y-4">
-              <div className="w-24 h-24 bg-gray-200 rounded-full mx-auto skeleton"></div>
-              <div className="h-4 bg-gray-200 rounded w-32 mx-auto skeleton"></div>
-              <p className="text-gray-500">{t('map.loadingMap')}</p>
-            </div>
-          </div>
-        </div>
-      )}
+      <MapContainer
+        mapRef={mapRef}
+        mapInstance={mapInstanceRef.current}
+        marker={markerRef.current}
+        selectedCoords={selectedCoords}
+        isMapLoaded={isMapLoaded}
+      />
       
       {/* Mobile-optimized floating header with safe area */}
       <div className="absolute top-0 left-0 right-0 z-10 bg-white/95 backdrop-blur-sm border-b border-gray-200">
@@ -514,66 +206,16 @@ export const MapInterface = ({ onCoordinatesSet, onLogout, coordinates, credenti
       </div>
       
       {/* Enhanced search bar with recent searches */}
-      <div className="absolute top-20 left-4 right-4 z-10 md:left-6 md:right-auto md:w-80">
-        <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-lg p-4 space-y-3">
-          <div className="flex items-center gap-3">
-            <Search className="w-5 h-5 text-gray-500 flex-shrink-0" />
-            <Input
-              ref={searchInputRef}
-              placeholder={t('map.searchPlaceholder')}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-              className="border-none shadow-none focus-visible:ring-0 text-base h-12"
-              autoComplete="off"
-            />
-            {searchQuery && (
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={handleClearSearch}
-                className="p-2 h-8 w-8"
-                aria-label="Clear search"
-              >
-                ✕
-              </Button>
-            )}
-            <Button 
-              size="sm" 
-              onClick={handleSearch} 
-              disabled={isSearching || !searchQuery.trim()}
-              className="flex-shrink-0 h-12 px-6"
-            >
-              {isSearching ? '...' : t('common.go')}
-            </Button>
-          </div>
-          
-          {/* Recent searches */}
-          {recentSearches.length > 0 && !searchQuery && (
-            <div className="border-t pt-3">
-              <p className="text-xs text-gray-500 mb-2">{t('map.recentSearches')}</p>
-              <div className="flex flex-wrap gap-2">
-                {recentSearches.map((search, index) => (
-                  <button
-                    key={index}
-                    onClick={() => {
-                      setSearchQuery(search);
-                      handleSearch();
-                    }}
-                    className="text-xs bg-gray-100 text-gray-700 px-3 py-1 rounded-full hover:bg-gray-200 transition-colors min-h-[32px]"
-                  >
-                    {search}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-          
-          <p className="text-xs text-gray-500">
-            {t('map.tryLocations')}
-          </p>
-        </div>
-      </div>
+      <SearchBar
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        isSearching={isSearching}
+        recentSearches={recentSearches}
+        searchInputRef={searchInputRef}
+        onSearch={handleSearch}
+        onClearSearch={handleClearSearch}
+        onRecentSearchClick={handleRecentSearchClick}
+      />
       
       {/* Mobile FAB for manual entry - larger touch target */}
       <div className="absolute top-36 right-4 z-10 md:top-24">
@@ -588,84 +230,19 @@ export const MapInterface = ({ onCoordinatesSet, onLogout, coordinates, credenti
       </div>
       
       {/* Enhanced bottom sheet for manual entry */}
-      <BottomSheet
+      <ManualCoordinateEntry
         isOpen={showManualEntry}
         onClose={() => setShowManualEntry(false)}
-        title={t('manualCoords.title')}
-        className="pb-safe-area-inset-bottom"
-      >
-        <div className="space-y-6">
-          <div className="space-y-3">
-            <Label htmlFor="latitude" className="text-base font-medium">{t('manualCoords.latitude')}</Label>
-            <Input
-              id="latitude"
-              type="number"
-              step="any"
-              placeholder={t('manualCoords.latitudePlaceholder')}
-              value={manualLat}
-              onChange={(e) => setManualLat(e.target.value)}
-              className="text-base h-12"
-              autoComplete="off"
-            />
-          </div>
-          <div className="space-y-3">
-            <Label htmlFor="longitude" className="text-base font-medium">{t('manualCoords.longitude')}</Label>
-            <Input
-              id="longitude"
-              type="number"
-              step="any"
-              placeholder={t('manualCoords.longitudePlaceholder')}
-              value={manualLng}
-              onChange={(e) => setManualLng(e.target.value)}
-              className="text-base h-12"
-              autoComplete="off"
-            />
-          </div>
-          <Button onClick={handleManualCoords} className="w-full h-12 text-base font-medium">
-            {t('manualCoords.setCoordinates')}
-          </Button>
-        </div>
-      </BottomSheet>
+        coordinates={selectedCoords}
+        onCoordinatesSet={handleManualCoords}
+      />
       
       {/* Enhanced coordinates display with safe area padding */}
       {selectedCoords && (
-        <div 
-          className="absolute left-4 right-4 z-10 md:left-6 md:right-auto md:w-auto"
-          style={{ bottom: `max(80px, calc(env(safe-area-inset-bottom) + 80px))` }}
-        >
-          <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-lg p-4 animate-fade-in">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center flex-shrink-0">
-                <MapPin className="w-5 h-5 text-white" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-semibold text-gray-800 text-base">{t('map.selectedLocation')}</p>
-                <p className="text-sm text-gray-600 truncate" role="region" aria-label="Selected coordinates">
-                  <span>Lat: {selectedCoords.lat}</span>, <span>Lng: {selectedCoords.lng}</span>
-                </p>
-              </div>
-              <Button 
-                onClick={handleContinue} 
-                className="bg-green-600 hover:bg-green-700 h-12 px-6 font-medium min-w-[100px]"
-                aria-label="Continue to project selection"
-              >
-                {t('map.continue')}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-      
-      {/* Mobile-friendly instructions with safe area */}
-      {!selectedCoords && isMapLoaded && (
-        <div 
-          className="absolute left-1/2 transform -translate-x-1/2 z-10 px-4"
-          style={{ bottom: `max(20px, calc(env(safe-area-inset-bottom) + 20px))` }}
-        >
-          <div className="bg-black/75 text-white rounded-2xl px-4 py-3 text-center max-w-xs">
-            <p className="text-sm">{t('map.tapToSelect')}</p>
-          </div>
-        </div>
+        <CoordinateDisplay
+          coordinates={selectedCoords}
+          onContinue={handleContinue}
+        />
       )}
 
       {/* Alert Popup */}
