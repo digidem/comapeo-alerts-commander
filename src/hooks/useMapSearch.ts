@@ -90,12 +90,12 @@ export const useMapSearch = (
         toast.success(t('map.locationFound', { query: searchQuery, lat: lat.toString(), lng: lng.toString() }));
         setSearchQuery('');
       } else {
-        toast.error(`No results found for "${searchQuery}"`);
+        toast.error(t('map.locationNotFound'));
       }
     } catch (error) {
       console.error('Geocoding error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown geocoding error';
-      toast.error(`Search failed: ${errorMessage}`);
+      toast.error(t('map.searchFailed'));
     } finally {
       setIsSearching(false);
     }
