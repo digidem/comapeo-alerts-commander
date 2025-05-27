@@ -37,9 +37,17 @@ export const useMapAlerts = (
       if (mapInstance) {
         addAlertMarkers(fetchedAlerts);
       }
+      
+      if (fetchedAlerts.length === 0) {
+        console.log('No alerts found for any project');
+      } else {
+        console.log(`Loaded ${fetchedAlerts.length} alerts from ${projects.length} projects`);
+      }
     } catch (error) {
       console.error('Error loading alerts:', error);
-      toast.error('Failed to load existing alerts');
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred while loading alerts';
+      toast.error(`Failed to load alerts: ${errorMessage}`);
+      setAlerts([]);
     } finally {
       setIsLoadingAlerts(false);
     }

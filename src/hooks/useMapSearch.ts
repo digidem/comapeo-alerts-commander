@@ -41,30 +41,38 @@ export const useMapSearch = (
   const handleSearch = async () => {
     if (!searchQuery.trim()) return;
     
+    const accessToken = mapboxgl.accessToken;
+    if (!accessToken) {
+      toast.error('Mapbox access token is not configured');
+      return;
+    }
+    
     setIsSearching(true);
     
     try {
-      // Simulate geocoding - in a real app, you'd use a geocoding service
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const response = await fetch(
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(searchQuery)}.json?access_token=${accessToken}&limit=1`
+      );
       
-      // Mock search results
-      const mockResults = {
-        'london': { lat: 51.5074, lng: -0.1278 },
-        'paris': { lat: 48.8566, lng: 2.3522 },
-        'new york': { lat: 40.7128, lng: -74.0060 },
-        'tokyo': { lat: 35.6762, lng: 139.6503 }
-      };
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(`Geocoding API error: ${response.status} - ${errorData.message || response.statusText}`);
+      }
       
-      const result = mockResults[searchQuery.toLowerCase() as keyof typeof mockResults];
+      const data = await response.json();
       
-      if (result) {
+      if (data.features && data.features.length > 0) {
+        const feature = data.features[0];
+        const [lng, lat] = feature.center;
+        
+        const result = { lat, lng };
         onCoordinatesChange(result);
         saveRecentSearch(searchQuery);
         
         // Update map center and marker
         if (mapInstance) {
           mapInstance.flyTo({
-            center: [result.lng, result.lat],
+            center: [lng, lat],
             zoom: 10
           });
           
@@ -75,18 +83,19 @@ export const useMapSearch = (
           markerRef.current = new mapboxgl.Marker({
             color: '#ef4444'
           })
-            .setLngLat([result.lng, result.lat])
+            .setLngLat([lng, lat])
             .addTo(mapInstance);
         }
         
-        toast.success(t('map.locationFound', { query: searchQuery, lat: result.lat.toString(), lng: result.lng.toString() }));
+        toast.success(t('map.locationFound', { query: searchQuery, lat: lat.toString(), lng: lng.toString() }));
         setSearchQuery('');
       } else {
-        toast.error(t('map.locationNotFound'));
+        toast.error(`No results found for "${searchQuery}"`);
       }
     } catch (error) {
-      console.error('Search error:', error);
-      toast.error(t('map.searchFailed'));
+      console.error('Geocoding error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown geocoding error';
+      toast.error(`Search failed: ${errorMessage}`);
     } finally {
       setIsSearching(false);
     }

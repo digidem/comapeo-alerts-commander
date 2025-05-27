@@ -54,7 +54,8 @@ class ApiService {
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorText = await response.text();
+        throw new Error(`Failed to fetch projects: ${response.status} ${response.statusText}${errorText ? ` - ${errorText}` : ''}`);
       }
 
       const data = await response.json();
@@ -71,21 +72,14 @@ class ApiService {
           name: project.name || project.title || `Project ${index + 1}`
         }));
       } else {
-        // Fallback for demo purposes
-        return [
-          { projectId: 'demo-project-1', name: 'Demo Project 1' },
-          { projectId: 'demo-project-2', name: 'Demo Project 2' },
-          { projectId: 'demo-project-3', name: 'Demo Project 3' }
-        ];
+        throw new Error('Invalid response format: expected array of projects or object with projects property');
       }
     } catch (error) {
       console.error('Error fetching projects:', error);
-      // Return demo projects for development/testing
-      return [
-        { projectId: 'demo-project-1', name: 'Demo Project 1' },
-        { projectId: 'demo-project-2', name: 'Demo Project 2' },
-        { projectId: 'demo-project-3', name: 'Demo Project 3' }
-      ];
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error('Unknown error occurred while fetching projects');
     }
   }
 
@@ -104,26 +98,22 @@ class ApiService {
 
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+        throw new Error(`Failed to create alert for project ${projectId}: ${response.status} ${response.statusText}${errorText ? ` - ${errorText}` : ''}`);
       }
 
-      // For demo purposes, we'll simulate success
       console.log(`Alert created successfully for project ${projectId}:`, alertData);
     } catch (error) {
       console.error(`Error creating alert for project ${projectId}:`, error);
-      
-      // For demo purposes, we'll simulate success in development
-      if (credentials.serverName.includes('demo') || credentials.serverName.includes('localhost')) {
-        console.log(`Demo mode: Alert would be created for project ${projectId}:`, alertData);
-        return;
+      if (error instanceof Error) {
+        throw error;
       }
-      
-      throw error;
+      throw new Error(`Unknown error occurred while creating alert for project ${projectId}`);
     }
   }
 
   async fetchAlerts(credentials: Credentials, projects: Project[]): Promise<MapAlert[]> {
     const alerts: MapAlert[] = [];
+    const errors: string[] = [];
     
     for (const project of projects) {
       try {
@@ -136,52 +126,45 @@ class ApiService {
           },
         });
 
-        if (response.ok) {
-          const data = await response.json();
-          const projectAlerts = Array.isArray(data) ? data : data.alerts || [];
-          
-          projectAlerts.forEach((alert: any) => {
-            if (alert.geometry && alert.geometry.coordinates) {
-              alerts.push({
-                id: alert.id || `${project.projectId}-${Date.now()}`,
-                name: alert.metadata?.alert_type || 'Alert',
-                coordinates: alert.geometry.coordinates,
-                projectName: project.name,
-                detectionDateStart: alert.detectionDateStart || '',
-                detectionDateEnd: alert.detectionDateEnd || '',
-                sourceId: alert.sourceId || ''
-              });
-            }
-          });
+        if (!response.ok) {
+          const errorText = await response.text();
+          const errorMessage = `Failed to fetch alerts for ${project.name}: ${response.status} ${response.statusText}${errorText ? ` - ${errorText}` : ''}`;
+          errors.push(errorMessage);
+          console.error(errorMessage);
+          continue;
         }
+
+        const data = await response.json();
+        const projectAlerts = Array.isArray(data) ? data : data.alerts || [];
+        
+        projectAlerts.forEach((alert: any) => {
+          if (alert.geometry && alert.geometry.coordinates) {
+            alerts.push({
+              id: alert.id || `${project.projectId}-${Date.now()}`,
+              name: alert.metadata?.alert_type || 'Alert',
+              coordinates: alert.geometry.coordinates,
+              projectName: project.name,
+              detectionDateStart: alert.detectionDateStart || '',
+              detectionDateEnd: alert.detectionDateEnd || '',
+              sourceId: alert.sourceId || ''
+            });
+          }
+        });
       } catch (error) {
-        console.error(`Error fetching alerts for project ${project.projectId}:`, error);
-        // Continue with other projects
+        const errorMessage = `Error fetching alerts for project ${project.name}: ${error instanceof Error ? error.message : 'Unknown error'}`;
+        errors.push(errorMessage);
+        console.error(errorMessage);
       }
     }
 
-    // Add demo alerts for development
-    if (credentials.serverName.includes('demo') || alerts.length === 0) {
-      alerts.push(
-        {
-          id: 'demo-alert-1',
-          name: 'fire-detection',
-          coordinates: [-74.006, 40.7128],
-          projectName: 'Demo Project 1',
-          detectionDateStart: '2025-01-01T00:00:00Z',
-          detectionDateEnd: '2025-01-02T00:00:00Z',
-          sourceId: 'demo-source-1'
-        },
-        {
-          id: 'demo-alert-2',
-          name: 'deforestation',
-          coordinates: [-0.1278, 51.5074],
-          projectName: 'Demo Project 2',
-          detectionDateStart: '2025-01-01T00:00:00Z',
-          detectionDateEnd: '2025-01-02T00:00:00Z',
-          sourceId: 'demo-source-2'
-        }
-      );
+    // Throw error if we couldn't fetch any alerts and there were errors
+    if (alerts.length === 0 && errors.length > 0) {
+      throw new Error(`Failed to fetch alerts from all projects:\n${errors.join('\n')}`);
+    }
+
+    // Log errors but don't throw if we got some alerts
+    if (errors.length > 0) {
+      console.warn('Some projects failed to load alerts:', errors);
     }
 
     return alerts;
