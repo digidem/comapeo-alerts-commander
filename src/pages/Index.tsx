@@ -1,10 +1,10 @@
-
 import { useState, useEffect } from 'react';
 import { LoginForm } from '@/components/LoginForm';
 import { MapInterface } from '@/components/MapInterface';
 import { ProjectSelection } from '@/components/ProjectSelection';
 import { AlertForm } from '@/components/AlertForm';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 interface Credentials {
   serverName: string;
@@ -23,6 +23,7 @@ interface Coordinates {
 }
 
 const Index = () => {
+  const { t } = useTranslation();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [credentials, setCredentials] = useState<Credentials | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -55,7 +56,7 @@ const Index = () => {
       localStorage.setItem('mapAlert_credentials', JSON.stringify(creds));
     }
     
-    toast.success('Successfully authenticated');
+    toast.success(t('auth.successfullyAuthenticated'));
   };
 
   const handleLogout = () => {
@@ -66,7 +67,7 @@ const Index = () => {
     setCoordinates(null);
     setCurrentStep('auth');
     localStorage.removeItem('mapAlert_credentials');
-    toast.success('Logged out successfully');
+    toast.success(t('auth.loggedOutSuccessfully'));
   };
 
   const handleCoordinatesSet = (coords: Coordinates) => {

@@ -1,0 +1,125 @@
+
+{
+  "app": {
+    "title": "CoMapeo Alert",
+    "mapAlertSystem": "Map Alert System"
+  },
+  "auth": {
+    "title": "Map Alert System",
+    "subtitle": "Enter your server credentials to continue",
+    "serverName": "Server Name",
+    "serverNamePlaceholder": "comapeo.example",
+    "bearerToken": "Bearer Token",
+    "bearerTokenPlaceholder": "Enter your bearer token",
+    "rememberMe": "Remember me",
+    "connect": "Connect",
+    "connecting": "Connecting...",
+    "successfullyAuthenticated": "Successfully authenticated",
+    "loggedOutSuccessfully": "Logged out successfully"
+  },
+  "map": {
+    "searchPlaceholder": "Search for a city...",
+    "recentSearches": "Recent searches:",
+    "tryLocations": "Try: London, Paris, New York, Tokyo",
+    "selectedLocation": "Selected Location",
+    "continue": "Continue",
+    "manualEntry": "Manual Entry",
+    "tapToSelect": "Tap anywhere on the map to select coordinates",
+    "locationSelected": "Location selected: {{lat}}, {{lng}}",
+    "locationFound": "Found {{query}}: {{lat}}, {{lng}}",
+    "locationNotFound": "Location not found. Try: London, Paris, New York, or Tokyo",
+    "searchFailed": "⚠️ Search failed. Please check your connection and try again.",
+    "mapConfigError": "⚠️ Map configuration error. Please contact support.",
+    "loadingMap": "Loading map...",
+    "coordinatesCopied": "Coordinates copied to clipboard",
+    "failedToCopy": "Failed to copy coordinates",
+    "coordinatesSetManually": "Coordinates set manually: {{lat}}, {{lng}}",
+    "pleaseSelectCoordinates": "Please select coordinates first"
+  },
+  "mapbox": {
+    "title": "Mapbox Configuration",
+    "token": "Mapbox Public Token",
+    "tokenPlaceholder": "pk.eyJ1IjoieW91ci11c2VybmFtZSIsImEi...",
+    "getTokenFrom": "Get your token from",
+    "initializeMap": "Initialize Map",
+    "backToLogin": "Back to Login",
+    "tokenSetSuccessfully": "Mapbox token set successfully",
+    "enterValidToken": "Please enter a valid Mapbox token"
+  },
+  "manualCoords": {
+    "title": "Manual Coordinates",
+    "latitude": "Latitude (-90 to 90)",
+    "longitude": "Longitude (-180 to 180)",
+    "latitudePlaceholder": "51.5074",
+    "longitudePlaceholder": "-0.1278",
+    "setCoordinates": "Set Coordinates",
+    "invalidCoordinates": "Please enter valid coordinates (lat: -90 to 90, lng: -180 to 180)"
+  },
+  "projects": {
+    "title": "Select Projects",
+    "subtitle": "Choose which projects to send the alert to",
+    "loadingProjects": "Loading projects...",
+    "noProjectsTitle": "No Projects Available",
+    "noProjectsMessage": "No projects are available for your account. Please contact your administrator for access.",
+    "backToMap": "Back to Map",
+    "foundProjects": "Found {{count}} projects",
+    "failedToFetch": "Failed to fetch projects",
+    "pleaseSelectAtLeast": "Please select at least one project",
+    "continueToAlert": "Continue to Alert Form ({{count}} selected)",
+    "selected": "Selected {{count}} project{{plural}}:",
+    "logout": "Logout"
+  },
+  "alert": {
+    "title": "Create Alert",
+    "subtitle": "Alert Details",
+    "location": "Location:",
+    "selectedProjects": "Selected Projects ({{count}}):",
+    "detectionStartTime": "Detection Start Time",
+    "detectionEndTime": "Detection End Time",
+    "sourceId": "Source ID",
+    "sourceIdPlaceholder": "3daada86-2216-4889-b501-bc91ceb13c8f",
+    "alertName": "Alert Name (slug format)",
+    "alertNamePlaceholder": "fire-detection",
+    "slugFormatHelp": "Use lowercase letters, numbers, and hyphens only",
+    "invalidFormat": "Invalid format. Example: fire-detection",
+    "endTimeAfterStart": "End time must be after start time",
+    "fillAllFields": "Please fill in all fields",
+    "slugFormatError": "Alert name must be in slug format (lowercase letters, numbers, and hyphens only)",
+    "submitAlert": "Submit Alert to {{count}} Project{{plural}}",
+    "creatingAlerts": "Creating alerts...",
+    "alertCreatedSuccessfully": "Alert created successfully",
+    "partiallyCompleted": "Partially completed",
+    "creationFailed": "Creation failed",
+    "tryAgain": "Try Again",
+    "successMessage": "Successfully created alert for {{count}} project{{plural}}",
+    "partialMessage": "Created alert for {{successCount}} project{{successPlural}}, failed for {{errorCount}}",
+    "failedMessage": "Failed to create alert for any project",
+    "unexpectedError": "An unexpected error occurred",
+    "copy": "Copy",
+    "back": "Back"
+  },
+  "alertPopup": {
+    "title": "Alert Details",
+    "close": "Close alert details",
+    "alertName": "Alert Name",
+    "project": "Project",
+    "coordinates": "Coordinates",
+    "detectionPeriod": "Detection Period",
+    "start": "Start: {{date}}",
+    "end": "End: {{date}}",
+    "sourceId": "Source ID",
+    "na": "N/A",
+    "invalidDate": "Invalid date"
+  },
+  "common": {
+    "install": "Install",
+    "installApp": "Install app",
+    "go": "Go",
+    "and": "and",
+    "more": "more"
+  },
+  "language": {
+    "switchLanguage": "Switch Language",
+    "english": "English"
+  }
+}

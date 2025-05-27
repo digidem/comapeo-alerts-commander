@@ -8,7 +8,9 @@ import { MapPin, Search, LogOut, Settings, Download } from 'lucide-react';
 import { toast } from 'sonner';
 import { usePWAInstall } from '@/hooks/usePWAInstall';
 import { AlertPopup } from '@/components/AlertPopup';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { apiService } from '@/services/apiService';
+import { useTranslation } from 'react-i18next';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
@@ -39,6 +41,7 @@ interface MapAlert {
 const DEFAULT_MAPBOX_TOKEN = 'pk.eyJ1IjoibHVhbmRybyIsImEiOiJjanY2djRpdnkwOWdqM3lwZzVuaGIxa3VsIn0.jamcK2t2I1j3TXkUQFIsjQ';
 
 export const MapInterface = ({ onCoordinatesSet, onLogout, coordinates, credentials, projects = [] }: MapInterfaceProps) => {
+  const { t } = useTranslation();
   const [selectedCoords, setSelectedCoords] = useState<Coordinates | null>(coordinates);
   const [manualLat, setManualLat] = useState('');
   const [manualLng, setManualLng] = useState('');
@@ -213,7 +216,7 @@ export const MapInterface = ({ onCoordinatesSet, onLogout, coordinates, credenti
 
       map.on('error', (e) => {
         console.error('Mapbox error:', e);
-        toast.error('⚠️ Map configuration error. Please contact support.');
+        toast.error(t('map.mapConfigError'));
       });
 
       map.on('click', (e) => {
@@ -251,7 +254,7 @@ export const MapInterface = ({ onCoordinatesSet, onLogout, coordinates, credenti
           }
         }, 100);
         
-        toast.success(`📍 Location selected: ${coords.lat}, ${coords.lng}`);
+        toast.success(t('map.locationSelected', { lat: coords.lat, lng: coords.lng }));
       });
 
       // Add existing marker if coordinates exist
@@ -274,9 +277,9 @@ export const MapInterface = ({ onCoordinatesSet, onLogout, coordinates, credenti
       };
     } catch (error) {
       console.error('Failed to initialize map:', error);
-      toast.error('⚠️ Map configuration error. Please contact support.');
+      toast.error(t('map.mapConfigError'));
     }
-  }, [mapboxToken, selectedCoords]);
+  }, [mapboxToken, selectedCoords, t]);
 
   const saveRecentSearch = (query: string) => {
     const updated = [query, ...recentSearches.filter(s => s !== query)].slice(0, 3);
@@ -286,11 +289,11 @@ export const MapInterface = ({ onCoordinatesSet, onLogout, coordinates, credenti
 
   const handleTokenSubmit = () => {
     if (!mapboxToken.trim()) {
-      toast.error('Please enter a valid Mapbox token');
+      toast.error(t('mapbox.enterValidToken'));
       return;
     }
     setShowTokenInput(false);
-    toast.success('Mapbox token set successfully');
+    toast.success(t('mapbox.tokenSetSuccessfully'));
   };
 
   const handleManualCoords = () => {
@@ -298,7 +301,7 @@ export const MapInterface = ({ onCoordinatesSet, onLogout, coordinates, credenti
     const lng = parseFloat(manualLng);
     
     if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
-      toast.error('Please enter valid coordinates (lat: -90 to 90, lng: -180 to 180)');
+      toast.error(t('manualCoords.invalidCoordinates'));
       return;
     }
     
@@ -323,7 +326,7 @@ export const MapInterface = ({ onCoordinatesSet, onLogout, coordinates, credenti
         .addTo(mapInstanceRef.current);
     }
     
-    toast.success(`📍 Coordinates set manually: ${lat}, ${lng}`);
+    toast.success(t('map.coordinatesSetManually', { lat, lng }));
     setShowManualEntry(false);
     
     // Haptic feedback
@@ -375,14 +378,14 @@ export const MapInterface = ({ onCoordinatesSet, onLogout, coordinates, credenti
             .addTo(mapInstanceRef.current);
         }
         
-        toast.success(`📍 Found ${searchQuery}: ${result.lat}, ${result.lng}`);
+        toast.success(t('map.locationFound', { query: searchQuery, lat: result.lat, lng: result.lng }));
         setSearchQuery('');
       } else {
-        toast.error('Location not found. Try: London, Paris, New York, or Tokyo');
+        toast.error(t('map.locationNotFound'));
       }
     } catch (error) {
       console.error('Search error:', error);
-      toast.error('⚠️ Search failed. Please check your connection and try again.');
+      toast.error(t('map.searchFailed'));
     } finally {
       setIsSearching(false);
     }
@@ -395,7 +398,7 @@ export const MapInterface = ({ onCoordinatesSet, onLogout, coordinates, credenti
 
   const handleContinue = () => {
     if (!selectedCoords) {
-      toast.error('Please select coordinates first');
+      toast.error(t('map.pleaseSelectCoordinates'));
       return;
     }
     
@@ -414,31 +417,31 @@ export const MapInterface = ({ onCoordinatesSet, onLogout, coordinates, credenti
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <MapPin className="w-5 h-5" />
-              Mapbox Configuration
+              {t('mapbox.title')}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="mapboxToken">Mapbox Public Token</Label>
+              <Label htmlFor="mapboxToken">{t('mapbox.token')}</Label>
               <Input
                 id="mapboxToken"
                 type="password"
-                placeholder="pk.eyJ1IjoieW91ci11c2VybmFtZSIsImEi..."
+                placeholder={t('mapbox.tokenPlaceholder')}
                 value={mapboxToken}
                 onChange={(e) => setMapboxToken(e.target.value)}
               />
               <p className="text-sm text-gray-600">
-                Get your token from{' '}
+                {t('mapbox.getTokenFrom')}{' '}
                 <a href="https://mapbox.com/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
                   mapbox.com
                 </a>
               </p>
             </div>
             <Button onClick={handleTokenSubmit} className="w-full">
-              Initialize Map
+              {t('mapbox.initializeMap')}
             </Button>
             <Button variant="outline" onClick={onLogout} className="w-full">
-              Back to Login
+              {t('mapbox.backToLogin')}
             </Button>
           </CardContent>
         </Card>
@@ -469,7 +472,7 @@ export const MapInterface = ({ onCoordinatesSet, onLogout, coordinates, credenti
             <div className="text-center space-y-4">
               <div className="w-24 h-24 bg-gray-200 rounded-full mx-auto skeleton"></div>
               <div className="h-4 bg-gray-200 rounded w-32 mx-auto skeleton"></div>
-              <p className="text-gray-500">Loading map...</p>
+              <p className="text-gray-500">{t('map.loadingMap')}</p>
             </div>
           </div>
         </div>
@@ -481,18 +484,19 @@ export const MapInterface = ({ onCoordinatesSet, onLogout, coordinates, credenti
           className="flex justify-between items-center px-4 py-3 h-16"
           style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top))' }}
         >
-          <h1 className="text-lg font-bold text-gray-800">CoMapeo Alert</h1>
+          <h1 className="text-lg font-bold text-gray-800">{t('app.title')}</h1>
           <div className="flex items-center gap-2">
+            <LanguageSwitcher />
             {isInstallable && (
               <Button
                 variant="outline"
                 size="sm"
                 onClick={installApp}
                 className="flex items-center gap-1 h-11 min-w-[44px]"
-                aria-label="Install app"
+                aria-label={t('common.installApp')}
               >
                 <Download className="w-4 h-4" />
-                <span className="hidden sm:inline">Install</span>
+                <span className="hidden sm:inline">{t('common.install')}</span>
               </Button>
             )}
             <Button 
@@ -500,10 +504,10 @@ export const MapInterface = ({ onCoordinatesSet, onLogout, coordinates, credenti
               size="sm" 
               onClick={onLogout} 
               className="flex items-center gap-1 h-11 min-w-[44px]"
-              aria-label="Logout"
+              aria-label={t('projects.logout')}
             >
               <LogOut className="w-4 h-4" />
-              <span className="hidden sm:inline">Logout</span>
+              <span className="hidden sm:inline">{t('projects.logout')}</span>
             </Button>
           </div>
         </div>
@@ -516,7 +520,7 @@ export const MapInterface = ({ onCoordinatesSet, onLogout, coordinates, credenti
             <Search className="w-5 h-5 text-gray-500 flex-shrink-0" />
             <Input
               ref={searchInputRef}
-              placeholder="Search for a city..."
+              placeholder={t('map.searchPlaceholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
@@ -540,14 +544,14 @@ export const MapInterface = ({ onCoordinatesSet, onLogout, coordinates, credenti
               disabled={isSearching || !searchQuery.trim()}
               className="flex-shrink-0 h-12 px-6"
             >
-              {isSearching ? '...' : 'Go'}
+              {isSearching ? '...' : t('common.go')}
             </Button>
           </div>
           
           {/* Recent searches */}
           {recentSearches.length > 0 && !searchQuery && (
             <div className="border-t pt-3">
-              <p className="text-xs text-gray-500 mb-2">Recent searches:</p>
+              <p className="text-xs text-gray-500 mb-2">{t('map.recentSearches')}</p>
               <div className="flex flex-wrap gap-2">
                 {recentSearches.map((search, index) => (
                   <button
@@ -566,7 +570,7 @@ export const MapInterface = ({ onCoordinatesSet, onLogout, coordinates, credenti
           )}
           
           <p className="text-xs text-gray-500">
-            Try: London, Paris, New York, Tokyo
+            {t('map.tryLocations')}
           </p>
         </div>
       </div>
@@ -579,7 +583,7 @@ export const MapInterface = ({ onCoordinatesSet, onLogout, coordinates, credenti
           aria-label="Manual coordinate entry"
         >
           <Settings className="w-6 h-6 md:w-4 md:h-4" />
-          <span className="hidden md:inline md:ml-2">Manual Entry</span>
+          <span className="hidden md:inline md:ml-2">{t('map.manualEntry')}</span>
         </Button>
       </div>
       
@@ -587,17 +591,17 @@ export const MapInterface = ({ onCoordinatesSet, onLogout, coordinates, credenti
       <BottomSheet
         isOpen={showManualEntry}
         onClose={() => setShowManualEntry(false)}
-        title="Manual Coordinates"
+        title={t('manualCoords.title')}
         className="pb-safe-area-inset-bottom"
       >
         <div className="space-y-6">
           <div className="space-y-3">
-            <Label htmlFor="latitude" className="text-base font-medium">Latitude (-90 to 90)</Label>
+            <Label htmlFor="latitude" className="text-base font-medium">{t('manualCoords.latitude')}</Label>
             <Input
               id="latitude"
               type="number"
               step="any"
-              placeholder="51.5074"
+              placeholder={t('manualCoords.latitudePlaceholder')}
               value={manualLat}
               onChange={(e) => setManualLat(e.target.value)}
               className="text-base h-12"
@@ -605,12 +609,12 @@ export const MapInterface = ({ onCoordinatesSet, onLogout, coordinates, credenti
             />
           </div>
           <div className="space-y-3">
-            <Label htmlFor="longitude" className="text-base font-medium">Longitude (-180 to 180)</Label>
+            <Label htmlFor="longitude" className="text-base font-medium">{t('manualCoords.longitude')}</Label>
             <Input
               id="longitude"
               type="number"
               step="any"
-              placeholder="-0.1278"
+              placeholder={t('manualCoords.longitudePlaceholder')}
               value={manualLng}
               onChange={(e) => setManualLng(e.target.value)}
               className="text-base h-12"
@@ -618,7 +622,7 @@ export const MapInterface = ({ onCoordinatesSet, onLogout, coordinates, credenti
             />
           </div>
           <Button onClick={handleManualCoords} className="w-full h-12 text-base font-medium">
-            Set Coordinates
+            {t('manualCoords.setCoordinates')}
           </Button>
         </div>
       </BottomSheet>
@@ -635,7 +639,7 @@ export const MapInterface = ({ onCoordinatesSet, onLogout, coordinates, credenti
                 <MapPin className="w-5 h-5 text-white" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-semibold text-gray-800 text-base">Selected Location</p>
+                <p className="font-semibold text-gray-800 text-base">{t('map.selectedLocation')}</p>
                 <p className="text-sm text-gray-600 truncate" role="region" aria-label="Selected coordinates">
                   <span>Lat: {selectedCoords.lat}</span>, <span>Lng: {selectedCoords.lng}</span>
                 </p>
@@ -645,7 +649,7 @@ export const MapInterface = ({ onCoordinatesSet, onLogout, coordinates, credenti
                 className="bg-green-600 hover:bg-green-700 h-12 px-6 font-medium min-w-[100px]"
                 aria-label="Continue to project selection"
               >
-                Continue
+                {t('map.continue')}
               </Button>
             </div>
           </div>
@@ -659,7 +663,7 @@ export const MapInterface = ({ onCoordinatesSet, onLogout, coordinates, credenti
           style={{ bottom: `max(20px, calc(env(safe-area-inset-bottom) + 20px))` }}
         >
           <div className="bg-black/75 text-white rounded-2xl px-4 py-3 text-center max-w-xs">
-            <p className="text-sm">Tap anywhere on the map to select coordinates</p>
+            <p className="text-sm">{t('map.tapToSelect')}</p>
           </div>
         </div>
       )}
