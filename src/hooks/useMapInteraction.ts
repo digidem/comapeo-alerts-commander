@@ -80,7 +80,7 @@ export const useMapInteraction = (
           }
         }, 100);
         
-        toast.success(t('map.locationSelected', { lat: coords.lat, lng: coords.lng }));
+        toast.success(t('map.locationSelected', { lat: coords.lat.toString(), lng: coords.lng.toString() }));
       });
 
       // Add existing marker if coordinates exist

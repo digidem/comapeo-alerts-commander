@@ -79,7 +79,7 @@ export const useMapSearch = (
             .addTo(mapInstance);
         }
         
-        toast.success(t('map.locationFound', { query: searchQuery, lat: result.lat, lng: result.lng }));
+        toast.success(t('map.locationFound', { query: searchQuery, lat: result.lat.toString(), lng: result.lng.toString() }));
         setSearchQuery('');
       } else {
         toast.error(t('map.locationNotFound'));

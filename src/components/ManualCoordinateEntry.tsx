@@ -40,7 +40,7 @@ export const ManualCoordinateEntry = ({
     
     const coords = { lat, lng };
     onCoordinatesSet(coords);
-    toast.success(t('map.coordinatesSetManually', { lat, lng }));
+    toast.success(t('map.coordinatesSetManually', { lat: lat.toString(), lng: lng.toString() }));
     onClose();
     
     // Haptic feedback
