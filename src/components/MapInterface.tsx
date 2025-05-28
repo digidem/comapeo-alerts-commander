@@ -78,7 +78,7 @@ export const MapInterface = ({ onCoordinatesSet, onLogout, coordinates, credenti
     isLoadingAlerts,
     loadAlerts,
     cleanupMarkers
-  } = useMapAlerts(credentials, projects, mapInstanceRef.current);
+  } = useMapAlerts(credentials, projects, mapInstanceRef);
 
   const {
     searchQuery,

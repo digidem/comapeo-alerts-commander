@@ -15,19 +15,18 @@ self.addEventListener('install', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // Skip non-GET requests
-  if (event.request.method !== 'GET') return;
-  
-  // Skip API requests (handle them with network-first strategy)
-  if (event.request.url.includes('/projects') || event.request.url.includes('/alerts')) {
-    event.respondWith(
-      fetch(event.request)
-        .catch(() => caches.match('/offline.html'))
-    );
-    return;
+  // Skip API requests entirely - let them go through normally without service worker interference
+  if (event.request.url.includes('/projects') ||
+      event.request.url.includes('/alerts') ||
+      event.request.url.includes('comapeo.cloud') ||
+      event.request.url.includes('api.')) {
+    return; // Don't intercept API requests
   }
 
-  // Cache-first strategy for app shell
+  // Skip non-GET requests
+  if (event.request.method !== 'GET') return;
+
+  // Cache-first strategy for app shell only
   event.respondWith(
     caches.match(event.request)
       .then((response) => {
@@ -35,6 +34,14 @@ self.addEventListener('fetch', (event) => {
           return response;
         }
         return fetch(event.request);
+      })
+      .catch(() => {
+        // Return a proper Response object for offline scenarios
+        return new Response('Offline', {
+          status: 503,
+          statusText: 'Service Unavailable',
+          headers: { 'Content-Type': 'text/plain' }
+        });
       })
   );
 });

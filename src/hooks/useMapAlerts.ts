@@ -18,7 +18,7 @@ export interface MapAlert {
 export const useMapAlerts = (
   credentials: any,
   projects: any[],
-  mapInstance: mapboxgl.Map | null
+  mapInstanceRef: React.MutableRefObject<mapboxgl.Map | null>
 ) => {
   const { t } = useTranslation();
   const [alerts, setAlerts] = useState<MapAlert[]>([]);
@@ -28,16 +28,16 @@ export const useMapAlerts = (
 
   const loadAlerts = async () => {
     if (!credentials || projects.length === 0) return;
-    
+
     setIsLoadingAlerts(true);
     try {
       const fetchedAlerts = await apiService.fetchAlerts(credentials, projects);
       setAlerts(fetchedAlerts);
-      
-      if (mapInstance) {
+
+      if (mapInstanceRef.current) {
         addAlertMarkers(fetchedAlerts);
       }
-      
+
       if (fetchedAlerts.length === 0) {
         console.log('No alerts found for any project');
       } else {
@@ -54,7 +54,11 @@ export const useMapAlerts = (
   };
 
   const addAlertMarkers = (alertList: MapAlert[]) => {
-    if (!mapInstance) return;
+    const mapInstance = mapInstanceRef.current;
+    if (!mapInstance) {
+      console.warn('Map instance not available when trying to add alert markers');
+      return;
+    }
 
     // Clear existing alert markers
     alertMarkersRef.current.forEach(marker => marker.remove());

@@ -1,4 +1,6 @@
 
+import axios, { AxiosInstance, AxiosError } from 'axios';
+
 interface Credentials {
   serverName: string;
   bearerToken: string;
@@ -33,111 +35,132 @@ interface MapAlert {
 }
 
 class ApiService {
+  private getApiClient(credentials: Credentials): AxiosInstance {
+    const baseURL = this.getBaseUrl(credentials.serverName);
+
+    return axios.create({
+      baseURL,
+      headers: {
+        'Authorization': `Bearer ${credentials.bearerToken}`,
+        'Content-Type': 'application/json',
+      },
+      // Add timeout and better error handling
+      timeout: 30000,
+      validateStatus: (status) => status < 500, // Don't throw for 4xx errors
+    });
+  }
+
   private getBaseUrl(serverName: string): string {
-    // Ensure the server name includes protocol
+    // In development, use the proxy to avoid CORS issues
+    if (import.meta.env.DEV) {
+      return '/api';
+    }
+
+    // In production, use the full server URL
     if (!serverName.startsWith('http://') && !serverName.startsWith('https://')) {
       return `https://${serverName}`;
     }
     return serverName;
   }
 
-  async fetchProjects(credentials: Credentials): Promise<Project[]> {
-    const baseUrl = this.getBaseUrl(credentials.serverName);
-    
-    try {
-      const response = await fetch(`${baseUrl}/projects`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${credentials.bearerToken}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Failed to fetch projects: ${response.status} ${response.statusText}${errorText ? ` - ${errorText}` : ''}`);
-      }
-
-      const data = await response.json();
-      
-      // Handle different possible response formats
-      if (Array.isArray(data)) {
-        return data.map((project, index) => ({
-          projectId: project.id || project.projectId || `project-${index}`,
-          name: project.name || project.title || `Project ${index + 1}`
-        }));
-      } else if (data.projects && Array.isArray(data.projects)) {
-        return data.projects.map((project: any, index: number) => ({
-          projectId: project.id || project.projectId || `project-${index}`,
-          name: project.name || project.title || `Project ${index + 1}`
-        }));
+  private handleError(error: unknown, context: string): never {
+    if (error instanceof AxiosError) {
+      if (error.response) {
+        // Server responded with error status
+        const status = error.response.status;
+        const message = error.response.data?.message || error.response.statusText || error.message;
+        throw new Error(`${context}: ${status} ${message}`);
+      } else if (error.request) {
+        // Request was made but no response received (network error)
+        throw new Error(`${context}: Network error - ${error.message}`);
       } else {
-        throw new Error('Invalid response format: expected array of projects or object with projects property');
+        // Something else happened
+        throw new Error(`${context}: Request setup error - ${error.message}`);
       }
+    } else {
+      throw new Error(`${context}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  async fetchProjects(credentials: Credentials): Promise<Project[]> {
+    try {
+      const apiClient = this.getApiClient(credentials);
+      const response = await apiClient.get('/projects');
+
+      // Check if response was successful
+      if (response.status >= 400) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const responseData = response.data;
+
+      // Handle the actual API response format: {"data": [...]}
+      let projectsArray: any[] = [];
+
+      if (responseData.data && Array.isArray(responseData.data)) {
+        // Standard format: {"data": [...]}
+        projectsArray = responseData.data;
+      } else if (Array.isArray(responseData)) {
+        // Direct array format: [...]
+        projectsArray = responseData;
+      } else if (responseData.projects && Array.isArray(responseData.projects)) {
+        // Alternative format: {"projects": [...]}
+        projectsArray = responseData.projects;
+      } else {
+        throw new Error(`Invalid response format. Expected object with 'data' array, got: ${JSON.stringify(responseData)}`);
+      }
+
+      // Map the projects to our interface
+      return projectsArray.map((project: any, index: number) => ({
+        projectId: project.projectId || project.id || `project-${index}`,
+        name: project.name || project.title || `Project ${index + 1}`
+      }));
     } catch (error) {
       console.error('Error fetching projects:', error);
-      if (error instanceof Error) {
-        throw error;
-      }
-      throw new Error('Unknown error occurred while fetching projects');
+      this.handleError(error, 'Failed to fetch projects');
     }
   }
 
   async createAlert(credentials: Credentials, projectId: string, alertData: AlertData): Promise<void> {
-    const baseUrl = this.getBaseUrl(credentials.serverName);
-    
     try {
-      const response = await fetch(`${baseUrl}/projects/${projectId}/remoteDetectionAlerts`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${credentials.bearerToken}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(alertData),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Failed to create alert for project ${projectId}: ${response.status} ${response.statusText}${errorText ? ` - ${errorText}` : ''}`);
-      }
+      const apiClient = this.getApiClient(credentials);
+      await apiClient.post(`/projects/${projectId}/remoteDetectionAlerts`, alertData);
 
       console.log(`Alert created successfully for project ${projectId}:`, alertData);
     } catch (error) {
       console.error(`Error creating alert for project ${projectId}:`, error);
-      if (error instanceof Error) {
-        throw error;
-      }
-      throw new Error(`Unknown error occurred while creating alert for project ${projectId}`);
+      this.handleError(error, `Failed to create alert for project ${projectId}`);
     }
   }
 
   async fetchAlerts(credentials: Credentials, projects: Project[]): Promise<MapAlert[]> {
     const alerts: MapAlert[] = [];
     const errors: string[] = [];
-    
+
     for (const project of projects) {
       try {
-        const baseUrl = this.getBaseUrl(credentials.serverName);
-        const response = await fetch(`${baseUrl}/projects/${project.projectId}/remoteDetectionAlerts`, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${credentials.bearerToken}`,
-            'Content-Type': 'application/json',
-          },
-        });
+        const apiClient = this.getApiClient(credentials);
+        const response = await apiClient.get(`/projects/${project.projectId}/remoteDetectionAlerts`);
+        const responseData = response.data;
 
-        if (!response.ok) {
-          const errorText = await response.text();
-          const errorMessage = `Failed to fetch alerts for ${project.name}: ${response.status} ${response.statusText}${errorText ? ` - ${errorText}` : ''}`;
-          errors.push(errorMessage);
-          console.error(errorMessage);
-          continue;
+        // Handle the actual API response format: {"data": [...]}
+        let alertsArray: any[] = [];
+
+        if (responseData.data && Array.isArray(responseData.data)) {
+          // Standard format: {"data": [...]}
+          alertsArray = responseData.data;
+        } else if (Array.isArray(responseData)) {
+          // Direct array format: [...]
+          alertsArray = responseData;
+        } else if (responseData.alerts && Array.isArray(responseData.alerts)) {
+          // Alternative format: {"alerts": [...]}
+          alertsArray = responseData.alerts;
+        } else {
+          console.warn(`No alerts found for project ${project.name}. Response:`, responseData);
+          continue; // Skip this project, don't treat as error
         }
 
-        const data = await response.json();
-        const projectAlerts = Array.isArray(data) ? data : data.alerts || [];
-        
-        projectAlerts.forEach((alert: any) => {
+        alertsArray.forEach((alert: any) => {
           if (alert.geometry && alert.geometry.coordinates) {
             alerts.push({
               id: alert.id || `${project.projectId}-${Date.now()}`,
