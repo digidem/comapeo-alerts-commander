@@ -1,7 +1,6 @@
-
-import { Button } from '@/components/ui/button';
-import { MapPin } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
+import { Button } from "@/components/ui/button";
+import { MapPin } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface Coordinates {
   lat: number;
@@ -13,11 +12,14 @@ interface CoordinateDisplayProps {
   onContinue: () => void;
 }
 
-export const CoordinateDisplay = ({ coordinates, onContinue }: CoordinateDisplayProps) => {
+export const CoordinateDisplay = ({
+  coordinates,
+  onContinue,
+}: CoordinateDisplayProps) => {
   const { t } = useTranslation();
 
   return (
-    <div 
+    <div
       className="absolute left-4 right-4 z-10 md:left-6 md:right-auto md:w-auto"
       style={{ bottom: `max(80px, calc(env(safe-area-inset-bottom) + 80px))` }}
     >
@@ -27,17 +29,24 @@ export const CoordinateDisplay = ({ coordinates, onContinue }: CoordinateDisplay
             <MapPin className="w-5 h-5 text-white" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="font-semibold text-gray-800 text-base">{t('map.selectedLocation')}</p>
-            <p className="text-sm text-gray-600 truncate" role="region" aria-label="Selected coordinates">
-              <span>Lat: {coordinates.lat}</span>, <span>Lng: {coordinates.lng}</span>
+            <p className="font-semibold text-gray-800 text-base">
+              {t("map.selectedLocation")}
+            </p>
+            <p
+              className="text-sm text-gray-600 truncate"
+              role="region"
+              aria-label="Selected coordinates"
+            >
+              <span>Lat: {coordinates.lat}</span>,{" "}
+              <span>Lng: {coordinates.lng}</span>
             </p>
           </div>
-          <Button 
-            onClick={onContinue} 
+          <Button
+            onClick={onContinue}
             className="bg-green-600 hover:bg-green-700 h-12 px-6 font-medium min-w-[100px]"
             aria-label="Continue to project selection"
           >
-            {t('map.continue')}
+            {t("map.continue")}
           </Button>
         </div>
       </div>

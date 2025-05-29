@@ -1,13 +1,13 @@
-import React from 'react';
-import { Button } from '@/components/ui/button';
+import React from "react";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { ChevronDown, FolderOpen } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
+} from "@/components/ui/dropdown-menu";
+import { ChevronDown, FolderOpen } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface Project {
   projectId: string;
@@ -21,11 +21,11 @@ interface ProjectSelectorProps {
   isLoading?: boolean;
 }
 
-export const ProjectSelector = ({ 
-  projects, 
-  selectedProject, 
-  onProjectSelect, 
-  isLoading = false 
+export const ProjectSelector = ({
+  projects,
+  selectedProject,
+  onProjectSelect,
+  isLoading = false,
 }: ProjectSelectorProps) => {
   const { t } = useTranslation();
 
@@ -38,7 +38,9 @@ export const ProjectSelector = ({
         className="flex items-center gap-1 h-11 min-w-[44px] max-w-[200px] md:max-w-none"
       >
         <FolderOpen className="w-4 h-4" />
-        <span className="hidden sm:inline truncate">{t('projects.noProjects')}</span>
+        <span className="hidden sm:inline truncate">
+          {t("projects.noProjects")}
+        </span>
       </Button>
     );
   }
@@ -54,13 +56,13 @@ export const ProjectSelector = ({
         >
           <FolderOpen className="w-4 h-4 flex-shrink-0" />
           <span className="hidden sm:inline truncate">
-            {selectedProject?.name || t('projects.selectProject')}
+            {selectedProject?.name || t("projects.selectProject")}
           </span>
           <ChevronDown className="w-3 h-3 flex-shrink-0" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent 
-        align="start" 
+      <DropdownMenuContent
+        align="start"
         className="w-56 max-h-64 overflow-y-auto"
         sideOffset={5}
       >
@@ -69,9 +71,9 @@ export const ProjectSelector = ({
             key={project.projectId}
             onClick={() => onProjectSelect(project)}
             className={`cursor-pointer ${
-              selectedProject?.projectId === project.projectId 
-                ? 'bg-blue-50 text-blue-700' 
-                : ''
+              selectedProject?.projectId === project.projectId
+                ? "bg-blue-50 text-blue-700"
+                : ""
             }`}
           >
             <FolderOpen className="w-4 h-4 mr-2 flex-shrink-0" />

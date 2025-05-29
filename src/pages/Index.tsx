@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
-import { LoginForm } from '@/components/LoginForm';
-import { MapInterface } from '@/components/MapInterface';
-import { ProjectSelection } from '@/components/ProjectSelection';
-import { AlertForm } from '@/components/AlertForm';
-import { toast } from 'sonner';
-import { useTranslation } from 'react-i18next';
-import { apiService } from '@/services/apiService';
+import { useState, useEffect } from "react";
+import { LoginForm } from "@/components/LoginForm";
+import { MapInterface } from "@/components/MapInterface";
+import { ProjectSelection } from "@/components/ProjectSelection";
+import { AlertForm } from "@/components/AlertForm";
+import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
+import { apiService } from "@/services/apiService";
 
 interface Credentials {
   serverName: string;
@@ -30,7 +30,9 @@ const Index = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
   const [coordinates, setCoordinates] = useState<Coordinates | null>(null);
-  const [currentStep, setCurrentStep] = useState<'auth' | 'map' | 'projects' | 'alert'>('auth');
+  const [currentStep, setCurrentStep] = useState<
+    "auth" | "map" | "projects" | "alert"
+  >("auth");
   const [alertsRefreshKey, setAlertsRefreshKey] = useState(0);
   const [isLoadingProjects, setIsLoadingProjects] = useState(false);
 
@@ -40,10 +42,12 @@ const Index = () => {
     try {
       const fetchedProjects = await apiService.fetchProjects(creds);
       setProjects(fetchedProjects);
-      console.log(`Fetched ${fetchedProjects.length} projects for MapInterface`);
+      console.log(
+        `Fetched ${fetchedProjects.length} projects for MapInterface`,
+      );
     } catch (error) {
-      console.error('Error fetching projects:', error);
-      toast.error(t('projects.failedToFetch'));
+      console.error("Error fetching projects:", error);
+      toast.error(t("projects.failedToFetch"));
       // Don't prevent navigation to map, just show empty projects
       setProjects([]);
     } finally {
@@ -53,17 +57,17 @@ const Index = () => {
 
   useEffect(() => {
     // Check for stored credentials
-    const stored = localStorage.getItem('mapAlert_credentials');
+    const stored = localStorage.getItem("mapAlert_credentials");
     if (stored) {
       try {
         const parsed = JSON.parse(stored);
         setCredentials(parsed);
         setIsAuthenticated(true);
-        setCurrentStep('map');
+        setCurrentStep("map");
         // Fetch projects immediately after restoring credentials
         fetchProjects(parsed);
       } catch (error) {
-        localStorage.removeItem('mapAlert_credentials');
+        localStorage.removeItem("mapAlert_credentials");
       }
     }
   }, []);
@@ -71,13 +75,13 @@ const Index = () => {
   const handleLogin = async (creds: Credentials) => {
     setCredentials(creds);
     setIsAuthenticated(true);
-    setCurrentStep('map');
+    setCurrentStep("map");
 
     if (creds.rememberMe) {
-      localStorage.setItem('mapAlert_credentials', JSON.stringify(creds));
+      localStorage.setItem("mapAlert_credentials", JSON.stringify(creds));
     }
 
-    toast.success(t('auth.successfullyAuthenticated'));
+    toast.success(t("auth.successfullyAuthenticated"));
 
     // Fetch projects immediately after successful login
     await fetchProjects(creds);
@@ -89,34 +93,34 @@ const Index = () => {
     setProjects([]);
     setSelectedProjects([]);
     setCoordinates(null);
-    setCurrentStep('auth');
-    localStorage.removeItem('mapAlert_credentials');
-    toast.success(t('auth.loggedOutSuccessfully'));
+    setCurrentStep("auth");
+    localStorage.removeItem("mapAlert_credentials");
+    toast.success(t("auth.loggedOutSuccessfully"));
   };
 
   const handleCoordinatesSet = (coords: Coordinates) => {
     setCoordinates(coords);
-    setCurrentStep('projects');
+    setCurrentStep("projects");
   };
 
   const handleProjectsSelected = (projectIds: string[]) => {
     setSelectedProjects(projectIds);
-    setCurrentStep('alert');
+    setCurrentStep("alert");
   };
 
   const handleAlertSuccess = () => {
-    setCurrentStep('map');
+    setCurrentStep("map");
     setCoordinates(null);
     setSelectedProjects([]);
     // Trigger alerts refresh on map
-    setAlertsRefreshKey(prev => prev + 1);
+    setAlertsRefreshKey((prev) => prev + 1);
   };
 
   const renderCurrentStep = () => {
     switch (currentStep) {
-      case 'auth':
+      case "auth":
         return <LoginForm onLogin={handleLogin} />;
-      case 'map':
+      case "map":
         return (
           <MapInterface
             onCoordinatesSet={handleCoordinatesSet}
@@ -128,25 +132,25 @@ const Index = () => {
             key={alertsRefreshKey}
           />
         );
-      case 'projects':
+      case "projects":
         return (
           <ProjectSelection
             credentials={credentials!}
             onProjectsSelected={handleProjectsSelected}
-            onBack={() => setCurrentStep('map')}
+            onBack={() => setCurrentStep("map")}
             projects={projects}
             setProjects={setProjects}
             onLogout={handleLogout}
           />
         );
-      case 'alert':
+      case "alert":
         return (
           <AlertForm
             coordinates={coordinates!}
             selectedProjects={selectedProjects}
             credentials={credentials!}
             projects={projects}
-            onBack={() => setCurrentStep('projects')}
+            onBack={() => setCurrentStep("projects")}
             onSuccess={handleAlertSuccess}
           />
         );

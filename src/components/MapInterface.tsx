@@ -1,23 +1,22 @@
-
-import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { MapPin, LogOut, Settings, Download } from 'lucide-react';
-import { toast } from 'sonner';
-import { usePWAInstall } from '@/hooks/usePWAInstall';
-import { AlertPopup } from '@/components/AlertPopup';
-import { LanguageSwitcher } from '@/components/LanguageSwitcher';
-import { MapTokenSetup } from '@/components/MapTokenSetup';
-import { SearchBar } from '@/components/SearchBar';
-import { CoordinateDisplay } from '@/components/CoordinateDisplay';
-import { ManualCoordinateEntry } from '@/components/ManualCoordinateEntry';
-import { MapContainer } from '@/components/MapContainer';
-import { ProjectSelector } from '@/components/ProjectSelector';
-import { useMapAlerts } from '@/hooks/useMapAlerts';
-import { useMapSearch } from '@/hooks/useMapSearch';
-import { useMapInteraction } from '@/hooks/useMapInteraction';
-import { useTranslation } from 'react-i18next';
-import mapboxgl from 'mapbox-gl';
-import 'mapbox-gl/dist/mapbox-gl.css';
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { MapPin, LogOut, Settings, Download } from "lucide-react";
+import { toast } from "sonner";
+import { usePWAInstall } from "@/hooks/usePWAInstall";
+import { AlertPopup } from "@/components/AlertPopup";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { MapTokenSetup } from "@/components/MapTokenSetup";
+import { SearchBar } from "@/components/SearchBar";
+import { CoordinateDisplay } from "@/components/CoordinateDisplay";
+import { ManualCoordinateEntry } from "@/components/ManualCoordinateEntry";
+import { MapContainer } from "@/components/MapContainer";
+import { ProjectSelector } from "@/components/ProjectSelector";
+import { useMapAlerts } from "@/hooks/useMapAlerts";
+import { useMapSearch } from "@/hooks/useMapSearch";
+import { useMapInteraction } from "@/hooks/useMapInteraction";
+import { useTranslation } from "react-i18next";
+import mapboxgl from "mapbox-gl";
+import "mapbox-gl/dist/mapbox-gl.css";
 
 interface Coordinates {
   lat: number;
@@ -34,18 +33,28 @@ interface MapInterfaceProps {
 }
 
 // Default Mapbox token
-const DEFAULT_MAPBOX_TOKEN = 'pk.eyJ1IjoibHVhbmRybyIsImEiOiJjanY2djRpdnkwOWdqM3lwZzVuaGIxa3VsIn0.jamcK2t2I1j3TXkUQFIsjQ';
+const DEFAULT_MAPBOX_TOKEN =
+  "pk.eyJ1IjoibHVhbmRybyIsImEiOiJjanY2djRpdnkwOWdqM3lwZzVuaGIxa3VsIn0.jamcK2t2I1j3TXkUQFIsjQ";
 
 interface Project {
   projectId: string;
   name: string;
 }
 
-export const MapInterface = ({ onCoordinatesSet, onLogout, coordinates, credentials, projects = [], isLoadingProjects = false }: MapInterfaceProps) => {
+export const MapInterface = ({
+  onCoordinatesSet,
+  onLogout,
+  coordinates,
+  credentials,
+  projects = [],
+  isLoadingProjects = false,
+}: MapInterfaceProps) => {
   const { t } = useTranslation();
-  const [selectedCoords, setSelectedCoords] = useState<Coordinates | null>(coordinates);
+  const [selectedCoords, setSelectedCoords] = useState<Coordinates | null>(
+    coordinates,
+  );
   const [showManualEntry, setShowManualEntry] = useState(false);
-  const [mapboxToken, setMapboxToken] = useState('');
+  const [mapboxToken, setMapboxToken] = useState("");
   const [showTokenInput, setShowTokenInput] = useState(false);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
 
@@ -72,9 +81,9 @@ export const MapInterface = ({ onCoordinatesSet, onLogout, coordinates, credenti
   // Initialize selected project from localStorage or default to first project
   useEffect(() => {
     if (projects.length > 0) {
-      const savedProjectId = localStorage.getItem('selectedProjectId');
+      const savedProjectId = localStorage.getItem("selectedProjectId");
       const savedProject = savedProjectId
-        ? projects.find(p => p.projectId === savedProjectId)
+        ? projects.find((p) => p.projectId === savedProjectId)
         : null;
 
       // Use saved project if found, otherwise default to first project
@@ -86,7 +95,7 @@ export const MapInterface = ({ onCoordinatesSet, onLogout, coordinates, credenti
   // Save selected project to localStorage when it changes
   useEffect(() => {
     if (selectedProject) {
-      localStorage.setItem('selectedProjectId', selectedProject.projectId);
+      localStorage.setItem("selectedProjectId", selectedProject.projectId);
     }
   }, [selectedProject]);
 
@@ -101,7 +110,7 @@ export const MapInterface = ({ onCoordinatesSet, onLogout, coordinates, credenti
   const { mapRef, mapInstanceRef, markerRef, isMapLoaded } = useMapInteraction(
     mapboxToken,
     selectedCoords,
-    handleCoordinatesChange
+    handleCoordinatesChange,
   );
 
   const {
@@ -110,7 +119,7 @@ export const MapInterface = ({ onCoordinatesSet, onLogout, coordinates, credenti
     setSelectedAlert,
     isLoadingAlerts,
     loadAlerts,
-    cleanupMarkers
+    cleanupMarkers,
   } = useMapAlerts(credentials, selectedProject, mapInstanceRef);
 
   const {
@@ -120,7 +129,7 @@ export const MapInterface = ({ onCoordinatesSet, onLogout, coordinates, credenti
     recentSearches,
     searchInputRef,
     handleSearch,
-    handleClearSearch
+    handleClearSearch,
   } = useMapSearch(mapInstanceRef.current, markerRef, handleCoordinatesChange);
 
   // Load alerts when map loads and credentials are available
@@ -143,20 +152,20 @@ export const MapInterface = ({ onCoordinatesSet, onLogout, coordinates, credenti
 
   const handleManualCoords = (coords: Coordinates) => {
     setSelectedCoords(coords);
-    
+
     // Update map center and marker
     if (mapInstanceRef.current) {
       mapInstanceRef.current.flyTo({
         center: [coords.lng, coords.lat],
-        zoom: 10
+        zoom: 10,
       });
-      
+
       if (markerRef.current) {
         markerRef.current.remove();
       }
-      
+
       markerRef.current = new mapboxgl.Marker({
-        color: '#ef4444'
+        color: "#ef4444",
       })
         .setLngLat([coords.lng, coords.lat])
         .addTo(mapInstanceRef.current);
@@ -170,15 +179,15 @@ export const MapInterface = ({ onCoordinatesSet, onLogout, coordinates, credenti
 
   const handleContinue = () => {
     if (!selectedCoords) {
-      toast.error(t('map.pleaseSelectCoordinates'));
+      toast.error(t("map.pleaseSelectCoordinates"));
       return;
     }
-    
+
     // Haptic feedback
-    if ('vibrate' in navigator) {
+    if ("vibrate" in navigator) {
       navigator.vibrate([50, 100, 50]);
     }
-    
+
     onCoordinatesSet(selectedCoords);
   };
 
@@ -207,11 +216,15 @@ export const MapInterface = ({ onCoordinatesSet, onLogout, coordinates, credenti
       <div className="absolute top-0 left-0 right-0 z-10 bg-white/95 backdrop-blur-sm border-b border-gray-200">
         <div
           className="flex justify-between items-center px-4 py-3 h-16"
-          style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top))' }}
+          style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}
         >
           <div className="flex items-center gap-3 flex-1 min-w-0">
-            <h1 className="text-lg font-bold text-gray-800 hidden md:block">{t('app.title')}</h1>
-            <h1 className="text-sm font-bold text-gray-800 md:hidden truncate">{t('app.title')}</h1>
+            <h1 className="text-lg font-bold text-gray-800 hidden md:block">
+              {t("app.title")}
+            </h1>
+            <h1 className="text-sm font-bold text-gray-800 md:hidden truncate">
+              {t("app.title")}
+            </h1>
             <ProjectSelector
               projects={projects}
               selectedProject={selectedProject}
@@ -227,26 +240,26 @@ export const MapInterface = ({ onCoordinatesSet, onLogout, coordinates, credenti
                 size="sm"
                 onClick={installApp}
                 className="flex items-center gap-1 h-11 min-w-[44px]"
-                aria-label={t('common.installApp')}
+                aria-label={t("common.installApp")}
               >
                 <Download className="w-4 h-4" />
-                <span className="hidden sm:inline">{t('common.install')}</span>
+                <span className="hidden sm:inline">{t("common.install")}</span>
               </Button>
             )}
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={onLogout} 
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onLogout}
               className="flex items-center gap-1 h-11 min-w-[44px]"
-              aria-label={t('projects.logout')}
+              aria-label={t("projects.logout")}
             >
               <LogOut className="w-4 h-4" />
-              <span className="hidden sm:inline">{t('projects.logout')}</span>
+              <span className="hidden sm:inline">{t("projects.logout")}</span>
             </Button>
           </div>
         </div>
       </div>
-      
+
       {/* Enhanced search bar with recent searches */}
       <SearchBar
         searchQuery={searchQuery}
@@ -258,7 +271,7 @@ export const MapInterface = ({ onCoordinatesSet, onLogout, coordinates, credenti
         onClearSearch={handleClearSearch}
         onRecentSearchClick={handleRecentSearchClick}
       />
-      
+
       {/* Mobile FAB for manual entry - larger touch target */}
       <div className="absolute top-36 right-4 z-10 md:top-24">
         <Button
@@ -267,10 +280,12 @@ export const MapInterface = ({ onCoordinatesSet, onLogout, coordinates, credenti
           aria-label="Manual coordinate entry"
         >
           <Settings className="w-6 h-6 md:w-4 md:h-4" />
-          <span className="hidden md:inline md:ml-2">{t('map.manualEntry')}</span>
+          <span className="hidden md:inline md:ml-2">
+            {t("map.manualEntry")}
+          </span>
         </Button>
       </div>
-      
+
       {/* Enhanced bottom sheet for manual entry */}
       <ManualCoordinateEntry
         isOpen={showManualEntry}
@@ -278,7 +293,7 @@ export const MapInterface = ({ onCoordinatesSet, onLogout, coordinates, credenti
         coordinates={selectedCoords}
         onCoordinatesSet={handleManualCoords}
       />
-      
+
       {/* Enhanced coordinates display with safe area padding */}
       {selectedCoords && (
         <CoordinateDisplay

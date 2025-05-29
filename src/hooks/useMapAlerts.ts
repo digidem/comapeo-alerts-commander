@@ -1,9 +1,8 @@
-
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { toast } from 'sonner';
-import { apiService } from '@/services/apiService';
-import { useTranslation } from 'react-i18next';
-import mapboxgl from 'mapbox-gl';
+import { useState, useEffect, useRef, useCallback } from "react";
+import { toast } from "sonner";
+import { apiService } from "@/services/apiService";
+import { useTranslation } from "react-i18next";
+import mapboxgl from "mapbox-gl";
 
 export interface MapAlert {
   id: string;
@@ -18,7 +17,7 @@ export interface MapAlert {
 export const useMapAlerts = (
   credentials: any,
   selectedProject: any | null,
-  mapInstanceRef: React.MutableRefObject<mapboxgl.Map | null>
+  mapInstanceRef: React.MutableRefObject<mapboxgl.Map | null>,
 ) => {
   const { t } = useTranslation();
   const [alerts, setAlerts] = useState<MapAlert[]>([]);
@@ -29,12 +28,14 @@ export const useMapAlerts = (
   const addAlertMarkers = (alertList: MapAlert[]) => {
     const mapInstance = mapInstanceRef.current;
     if (!mapInstance) {
-      console.warn('Map instance not available when trying to add alert markers');
+      console.warn(
+        "Map instance not available when trying to add alert markers",
+      );
       return;
     }
 
     // Clear existing alert markers
-    alertMarkersRef.current.forEach(marker => marker.remove());
+    alertMarkersRef.current.forEach((marker) => marker.remove());
     alertMarkersRef.current = [];
 
     if (alertList.length === 0) {
@@ -44,19 +45,34 @@ export const useMapAlerts = (
     // Add new alert markers
     alertList.forEach((alert) => {
       // Validate coordinates
-      if (!alert.coordinates || !Array.isArray(alert.coordinates) || alert.coordinates.length !== 2) {
-        console.error(`Invalid coordinates for alert ${alert.id}:`, alert.coordinates);
+      if (
+        !alert.coordinates ||
+        !Array.isArray(alert.coordinates) ||
+        alert.coordinates.length !== 2
+      ) {
+        console.error(
+          `Invalid coordinates for alert ${alert.id}:`,
+          alert.coordinates,
+        );
         return;
       }
 
       const [lng, lat] = alert.coordinates;
-      if (typeof lng !== 'number' || typeof lat !== 'number' || isNaN(lng) || isNaN(lat)) {
-        console.error(`Invalid coordinate values for alert ${alert.id}:`, { lng, lat });
+      if (
+        typeof lng !== "number" ||
+        typeof lat !== "number" ||
+        isNaN(lng) ||
+        isNaN(lat)
+      ) {
+        console.error(`Invalid coordinate values for alert ${alert.id}:`, {
+          lng,
+          lat,
+        });
         return;
       }
 
-      const el = document.createElement('div');
-      el.className = 'alert-marker';
+      const el = document.createElement("div");
+      el.className = "alert-marker";
       el.style.cssText = `
         background-color: #ef4444;
         width: 24px;
@@ -73,7 +89,7 @@ export const useMapAlerts = (
       `;
 
       // Add label
-      const label = document.createElement('div');
+      const label = document.createElement("div");
       label.textContent = alert.name;
       label.style.cssText = `
         position: absolute;
@@ -91,11 +107,11 @@ export const useMapAlerts = (
       `;
       el.appendChild(label);
 
-      el.addEventListener('click', () => {
+      el.addEventListener("click", () => {
         setSelectedAlert(alert);
 
         // Haptic feedback
-        if ('vibrate' in navigator) {
+        if ("vibrate" in navigator) {
           navigator.vibrate(50);
         }
       });
@@ -113,14 +129,17 @@ export const useMapAlerts = (
 
     // Fit map to show all markers if there are any
     if (alertMarkersRef.current.length > 0) {
-      const coordinates = alertList.map(alert => alert.coordinates);
-      const bounds = coordinates.reduce((bounds, coord) => {
-        return bounds.extend(coord);
-      }, new mapboxgl.LngLatBounds(coordinates[0], coordinates[0]));
+      const coordinates = alertList.map((alert) => alert.coordinates);
+      const bounds = coordinates.reduce(
+        (bounds, coord) => {
+          return bounds.extend(coord);
+        },
+        new mapboxgl.LngLatBounds(coordinates[0], coordinates[0]),
+      );
 
       mapInstance.fitBounds(bounds, {
         padding: 50,
-        maxZoom: 15
+        maxZoom: 15,
       });
     }
   };
@@ -133,17 +152,24 @@ export const useMapAlerts = (
     setIsLoadingAlerts(true);
     try {
       // Fetch alerts for the selected project only
-      const fetchedAlerts = await apiService.fetchAlerts(credentials, [selectedProject]);
+      const fetchedAlerts = await apiService.fetchAlerts(credentials, [
+        selectedProject,
+      ]);
       setAlerts(fetchedAlerts);
 
       if (fetchedAlerts.length === 0) {
         console.log(`No alerts found for project: ${selectedProject.name}`);
       } else {
-        console.log(`Loaded ${fetchedAlerts.length} alerts for project: ${selectedProject.name}`);
+        console.log(
+          `Loaded ${fetchedAlerts.length} alerts for project: ${selectedProject.name}`,
+        );
       }
     } catch (error) {
-      console.error('Error loading alerts:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred while loading alerts';
+      console.error("Error loading alerts:", error);
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Unknown error occurred while loading alerts";
       toast.error(`Failed to load alerts: ${errorMessage}`);
       setAlerts([]);
     } finally {
@@ -160,7 +186,7 @@ export const useMapAlerts = (
 
   // Clean up markers when component unmounts
   const cleanupMarkers = () => {
-    alertMarkersRef.current.forEach(marker => marker.remove());
+    alertMarkersRef.current.forEach((marker) => marker.remove());
     alertMarkersRef.current = [];
   };
 
@@ -171,6 +197,6 @@ export const useMapAlerts = (
     isLoadingAlerts,
     loadAlerts,
     addAlertMarkers,
-    cleanupMarkers
+    cleanupMarkers,
   };
 };

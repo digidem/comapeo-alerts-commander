@@ -1,11 +1,16 @@
-
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
     <title>CoMapeo Alert</title>
-    <meta name="description" content="Geographic alert management system for CoMapeo projects" />
+    <meta
+      name="description"
+      content="Geographic alert management system for CoMapeo projects"
+    />
     <meta name="author" content="CoMapeo Team" />
 
     <!-- PWA Meta Tags -->
@@ -14,10 +19,10 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="CoMapeo Alert" />
     <meta name="format-detection" content="telephone=no" />
-    
+
     <!-- PWA Manifest -->
     <link rel="manifest" href="/manifest.json" />
-    
+
     <!-- Icons -->
     <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
     <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png" />
@@ -25,14 +30,17 @@
 
     <!-- Open Graph -->
     <meta property="og:title" content="CoMapeo Alert" />
-    <meta property="og:description" content="Geographic alert management system" />
+    <meta
+      property="og:description"
+      content="Geographic alert management system"
+    />
     <meta property="og:type" content="website" />
     <meta property="og:image" content="/icon-512.png" />
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:image" content="/icon-512.png" />
-    
+
     <!-- Safe Area Insets for iOS -->
     <style>
       :root {
@@ -46,36 +54,37 @@
 
   <body>
     <div id="root"></div>
-    
+
     <!-- Service Worker Registration -->
     <script>
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js')
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker
+            .register("/sw.js")
             .then((registration) => {
-              console.log('SW registered: ', registration);
+              console.log("SW registered: ", registration);
             })
             .catch((registrationError) => {
-              console.log('SW registration failed: ', registrationError);
+              console.log("SW registration failed: ", registrationError);
             });
         });
       }
     </script>
-    
+
     <!-- PWA Install Prompt -->
     <script>
       let deferredPrompt;
-      window.addEventListener('beforeinstallprompt', (e) => {
+      window.addEventListener("beforeinstallprompt", (e) => {
         e.preventDefault();
         deferredPrompt = e;
         // Show install button
-        const installButton = document.getElementById('install-button');
+        const installButton = document.getElementById("install-button");
         if (installButton) {
-          installButton.style.display = 'block';
+          installButton.style.display = "block";
         }
       });
     </script>
-    
+
     <!-- IMPORTANT: DO NOT REMOVE THIS SCRIPT TAG OR THIS VERY COMMENT! -->
     <script src="https://cdn.gpteng.co/gptengineer.js" type="module"></script>
     <script type="module" src="/src/main.tsx"></script>

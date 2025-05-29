@@ -1,12 +1,17 @@
-
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { MapPin } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { MapPin } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface LoginFormProps {
   onLogin: (credentials: {
@@ -18,29 +23,29 @@ interface LoginFormProps {
 
 export const LoginForm = ({ onLogin }: LoginFormProps) => {
   const { t } = useTranslation();
-  const [serverName, setServerName] = useState('');
-  const [bearerToken, setBearerToken] = useState('');
+  const [serverName, setServerName] = useState("");
+  const [bearerToken, setBearerToken] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!serverName.trim() || !bearerToken.trim()) {
       return;
     }
 
     setIsLoading(true);
-    
+
     // Simulate API validation delay
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
     onLogin({
       serverName: serverName.trim(),
       bearerToken: bearerToken.trim(),
-      rememberMe
+      rememberMe,
     });
-    
+
     setIsLoading(false);
   };
 
@@ -51,37 +56,37 @@ export const LoginForm = ({ onLogin }: LoginFormProps) => {
           <div className="mx-auto mb-4 w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center">
             <MapPin className="w-6 h-6 text-white" />
           </div>
-          <CardTitle className="text-2xl font-bold">{t('auth.title')}</CardTitle>
-          <CardDescription>
-            {t('auth.subtitle')}
-          </CardDescription>
+          <CardTitle className="text-2xl font-bold">
+            {t("auth.title")}
+          </CardTitle>
+          <CardDescription>{t("auth.subtitle")}</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="serverName">{t('auth.serverName')}</Label>
+              <Label htmlFor="serverName">{t("auth.serverName")}</Label>
               <Input
                 id="serverName"
                 type="text"
-                placeholder={t('auth.serverNamePlaceholder')}
+                placeholder={t("auth.serverNamePlaceholder")}
                 value={serverName}
                 onChange={(e) => setServerName(e.target.value)}
                 required
               />
             </div>
-            
+
             <div className="space-y-2">
-              <Label htmlFor="bearerToken">{t('auth.bearerToken')}</Label>
+              <Label htmlFor="bearerToken">{t("auth.bearerToken")}</Label>
               <Input
                 id="bearerToken"
                 type="password"
-                placeholder={t('auth.bearerTokenPlaceholder')}
+                placeholder={t("auth.bearerTokenPlaceholder")}
                 value={bearerToken}
                 onChange={(e) => setBearerToken(e.target.value)}
                 required
               />
             </div>
-            
+
             <div className="flex items-center space-x-2">
               <Checkbox
                 id="rememberMe"
@@ -89,16 +94,16 @@ export const LoginForm = ({ onLogin }: LoginFormProps) => {
                 onCheckedChange={(checked) => setRememberMe(checked === true)}
               />
               <Label htmlFor="rememberMe" className="text-sm">
-                {t('auth.rememberMe')}
+                {t("auth.rememberMe")}
               </Label>
             </div>
-            
-            <Button 
-              type="submit" 
-              className="w-full" 
+
+            <Button
+              type="submit"
+              className="w-full"
               disabled={isLoading || !serverName.trim() || !bearerToken.trim()}
             >
-              {isLoading ? t('auth.connecting') : t('auth.connect')}
+              {isLoading ? t("auth.connecting") : t("auth.connect")}
             </Button>
           </form>
         </CardContent>

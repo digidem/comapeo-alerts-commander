@@ -1,4 +1,3 @@
-
 import * as React from "react";
 import { cn } from "@/lib/utils";
 import { X } from "lucide-react";
@@ -11,7 +10,13 @@ interface BottomSheetProps {
   className?: string;
 }
 
-export const BottomSheet = ({ isOpen, onClose, children, title, className }: BottomSheetProps) => {
+export const BottomSheet = ({
+  isOpen,
+  onClose,
+  children,
+  title,
+  className,
+}: BottomSheetProps) => {
   const [startY, setStartY] = React.useState(0);
   const [currentY, setCurrentY] = React.useState(0);
   const [isDragging, setIsDragging] = React.useState(false);
@@ -42,21 +47,21 @@ export const BottomSheet = ({ isOpen, onClose, children, title, className }: Bot
   return (
     <>
       {/* Backdrop */}
-      <div 
+      <div
         className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
         onClick={onClose}
       />
-      
+
       {/* Bottom Sheet */}
-      <div 
+      <div
         className={cn(
           "fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl shadow-2xl transform transition-transform duration-300 ease-out",
           "pb-safe-area-inset-bottom",
-          className
+          className,
         )}
         style={{
           transform: `translateY(${currentY}px)`,
-          paddingBottom: 'max(1rem, env(safe-area-inset-bottom))'
+          paddingBottom: "max(1rem, env(safe-area-inset-bottom))",
         }}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
@@ -66,7 +71,7 @@ export const BottomSheet = ({ isOpen, onClose, children, title, className }: Bot
         <div className="flex justify-center pt-3 pb-2">
           <div className="w-10 h-1 bg-gray-300 rounded-full" />
         </div>
-        
+
         {/* Header */}
         {title && (
           <div className="flex items-center justify-between px-6 py-3 border-b">
@@ -79,11 +84,9 @@ export const BottomSheet = ({ isOpen, onClose, children, title, className }: Bot
             </button>
           </div>
         )}
-        
+
         {/* Content */}
-        <div className="p-6">
-          {children}
-        </div>
+        <div className="p-6">{children}</div>
       </div>
     </>
   );

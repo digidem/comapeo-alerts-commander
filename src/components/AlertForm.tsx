@@ -1,12 +1,11 @@
-
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Copy, CheckCircle, X, Loader } from 'lucide-react';
-import { toast } from 'sonner';
-import { apiService } from '@/services/apiService';
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ArrowLeft, Copy, CheckCircle, X, Loader } from "lucide-react";
+import { toast } from "sonner";
+import { apiService } from "@/services/apiService";
 
 interface Coordinates {
   lat: number;
@@ -32,22 +31,23 @@ interface AlertFormProps {
   onSuccess: () => void;
 }
 
-type SubmissionState = 'idle' | 'loading' | 'success' | 'error' | 'partial';
+type SubmissionState = "idle" | "loading" | "success" | "error" | "partial";
 
-export const AlertForm = ({ 
-  coordinates, 
-  selectedProjects, 
-  credentials, 
+export const AlertForm = ({
+  coordinates,
+  selectedProjects,
+  credentials,
   projects,
-  onBack, 
-  onSuccess 
+  onBack,
+  onSuccess,
 }: AlertFormProps) => {
-  const [startTime, setStartTime] = useState('');
-  const [endTime, setEndTime] = useState('');
-  const [sourceId, setSourceId] = useState('');
-  const [alertName, setAlertName] = useState('');
-  const [submissionState, setSubmissionState] = useState<SubmissionState>('idle');
-  const [errorMessage, setErrorMessage] = useState('');
+  const [startTime, setStartTime] = useState("");
+  const [endTime, setEndTime] = useState("");
+  const [sourceId, setSourceId] = useState("");
+  const [alertName, setAlertName] = useState("");
+  const [submissionState, setSubmissionState] =
+    useState<SubmissionState>("idle");
+  const [errorMessage, setErrorMessage] = useState("");
 
   const validateSlug = (value: string): boolean => {
     const slugRegex = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -58,40 +58,42 @@ export const AlertForm = ({
     const coordText = `${coordinates.lat}, ${coordinates.lng}`;
     try {
       await navigator.clipboard.writeText(coordText);
-      toast.success('Coordinates copied to clipboard');
-      
+      toast.success("Coordinates copied to clipboard");
+
       // Haptic feedback
-      if ('vibrate' in navigator) {
+      if ("vibrate" in navigator) {
         navigator.vibrate(50);
       }
     } catch (error) {
-      toast.error('Failed to copy coordinates');
+      toast.error("Failed to copy coordinates");
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!startTime || !endTime || !sourceId || !alertName) {
-      toast.error('Please fill in all fields');
+      toast.error("Please fill in all fields");
       return;
     }
 
     if (!validateSlug(alertName)) {
-      toast.error('Alert name must be in slug format (lowercase letters, numbers, and hyphens only)');
+      toast.error(
+        "Alert name must be in slug format (lowercase letters, numbers, and hyphens only)",
+      );
       return;
     }
 
     const start = new Date(startTime);
     const end = new Date(endTime);
-    
+
     if (start >= end) {
-      toast.error('End time must be after start time');
+      toast.error("End time must be after start time");
       return;
     }
 
-    setSubmissionState('loading');
-    setErrorMessage('');
+    setSubmissionState("loading");
+    setErrorMessage("");
 
     let successCount = 0;
     let errorCount = 0;
@@ -104,104 +106,117 @@ export const AlertForm = ({
             detectionDateEnd: end.toISOString(),
             sourceId,
             metadata: {
-              alert_type: alertName
+              alert_type: alertName,
             },
             geometry: {
               type: "Point",
-              coordinates: [coordinates.lng, coordinates.lat]
-            }
+              coordinates: [coordinates.lng, coordinates.lat],
+            },
           });
-          
+
           successCount++;
         } catch (error) {
           errorCount++;
-          console.error(`Failed to create alert for project ${projectId}:`, error);
+          console.error(
+            `Failed to create alert for project ${projectId}:`,
+            error,
+          );
         }
       }
 
       // Determine final state
       if (successCount === selectedProjects.length) {
-        setSubmissionState('success');
-        toast.success(`Successfully created alert for ${successCount} project${successCount !== 1 ? 's' : ''}`);
-        
+        setSubmissionState("success");
+        toast.success(
+          `Successfully created alert for ${successCount} project${successCount !== 1 ? "s" : ""}`,
+        );
+
         // Haptic feedback for success
-        if ('vibrate' in navigator) {
+        if ("vibrate" in navigator) {
           navigator.vibrate([50, 100, 50]);
         }
-        
+
         // Auto-navigate back after success
         setTimeout(() => {
           onSuccess();
         }, 2000);
       } else if (successCount > 0) {
-        setSubmissionState('partial');
-        setErrorMessage(`Created alert for ${successCount} project${successCount !== 1 ? 's' : ''}, failed for ${errorCount}`);
+        setSubmissionState("partial");
+        setErrorMessage(
+          `Created alert for ${successCount} project${successCount !== 1 ? "s" : ""}, failed for ${errorCount}`,
+        );
       } else {
-        setSubmissionState('error');
-        setErrorMessage('Failed to create alert for any project');
+        setSubmissionState("error");
+        setErrorMessage("Failed to create alert for any project");
       }
-      
     } catch (error) {
-      setSubmissionState('error');
-      setErrorMessage('An unexpected error occurred');
-      console.error('Error creating alerts:', error);
+      setSubmissionState("error");
+      setErrorMessage("An unexpected error occurred");
+      console.error("Error creating alerts:", error);
     }
   };
 
   const getButtonContent = () => {
     switch (submissionState) {
-      case 'loading':
+      case "loading":
         return (
           <>
             <Loader className="w-4 h-4 animate-spin" />
             Creating alerts...
           </>
         );
-      case 'success':
+      case "success":
         return (
           <>
             <CheckCircle className="w-4 h-4" />
             Alert created successfully
           </>
         );
-      case 'error':
-      case 'partial':
+      case "error":
+      case "partial":
         return (
           <>
             <X className="w-4 h-4" />
-            {submissionState === 'partial' ? 'Partially completed' : 'Creation failed'}
+            {submissionState === "partial"
+              ? "Partially completed"
+              : "Creation failed"}
           </>
         );
       default:
-        return `Submit Alert to ${selectedProjects.length} Project${selectedProjects.length !== 1 ? 's' : ''}`;
+        return `Submit Alert to ${selectedProjects.length} Project${selectedProjects.length !== 1 ? "s" : ""}`;
     }
   };
 
   const getButtonVariant = () => {
     switch (submissionState) {
-      case 'success':
-        return 'default';
-      case 'error':
-      case 'partial':
-        return 'destructive';
+      case "success":
+        return "default";
+      case "error":
+      case "partial":
+        return "destructive";
       default:
-        return 'default';
+        return "default";
     }
   };
 
   const selectedProjectNames = projects
-    .filter(p => selectedProjects.includes(p.projectId))
-    .map(p => p.name);
+    .filter((p) => selectedProjects.includes(p.projectId))
+    .map((p) => p.name);
 
-  const projectsText = selectedProjectNames.length > 2 
-    ? `${selectedProjectNames.slice(0, 2).join(', ')} and ${selectedProjectNames.length - 2} more`
-    : selectedProjectNames.join(', ');
+  const projectsText =
+    selectedProjectNames.length > 2
+      ? `${selectedProjectNames.slice(0, 2).join(", ")} and ${selectedProjectNames.length - 2} more`
+      : selectedProjectNames.join(", ");
 
   return (
     <div className="min-h-screen p-4 bg-gradient-to-br from-blue-50 to-indigo-100">
       <div className="max-w-2xl mx-auto">
         <div className="flex items-center gap-4 mb-6">
-          <Button variant="outline" onClick={onBack} className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={onBack}
+            className="flex items-center gap-2"
+          >
             <ArrowLeft className="w-4 h-4" />
             Back
           </Button>
@@ -218,11 +233,13 @@ export const AlertForm = ({
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600">Location:</p>
-                  <p className="font-mono text-sm">{coordinates.lat}, {coordinates.lng}</p>
+                  <p className="font-mono text-sm">
+                    {coordinates.lat}, {coordinates.lng}
+                  </p>
                 </div>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={copyCoordinates}
                   className="flex items-center gap-1"
                 >
@@ -230,7 +247,7 @@ export const AlertForm = ({
                   Copy
                 </Button>
               </div>
-              
+
               <div>
                 <p className="text-sm text-gray-600">
                   Selected Projects ({selectedProjects.length}):
@@ -288,7 +305,7 @@ export const AlertForm = ({
                   placeholder="fire-detection"
                   value={alertName}
                   onChange={(e) => setAlertName(e.target.value)}
-                  className={`h-12 ${!alertName || validateSlug(alertName) ? '' : 'border-red-500'}`}
+                  className={`h-12 ${!alertName || validateSlug(alertName) ? "" : "border-red-500"}`}
                   required
                 />
                 <p className="text-sm text-gray-600">
@@ -309,23 +326,26 @@ export const AlertForm = ({
               )}
 
               {/* Submit Button */}
-              <Button 
-                type="submit" 
-                className="w-full h-12 text-base font-medium" 
-                disabled={submissionState === 'loading' || !validateSlug(alertName)}
+              <Button
+                type="submit"
+                className="w-full h-12 text-base font-medium"
+                disabled={
+                  submissionState === "loading" || !validateSlug(alertName)
+                }
                 variant={getButtonVariant()}
               >
                 {getButtonContent()}
               </Button>
 
-              {(submissionState === 'error' || submissionState === 'partial') && (
-                <Button 
+              {(submissionState === "error" ||
+                submissionState === "partial") && (
+                <Button
                   type="button"
                   variant="outline"
                   className="w-full h-12"
                   onClick={() => {
-                    setSubmissionState('idle');
-                    setErrorMessage('');
+                    setSubmissionState("idle");
+                    setErrorMessage("");
                   }}
                 >
                   Try Again

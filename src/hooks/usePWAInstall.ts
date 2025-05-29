@@ -1,19 +1,19 @@
-
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
-  userChoice: Promise<{outcome: 'accepted' | 'dismissed'}>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 }
 
 export const usePWAInstall = () => {
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [deferredPrompt, setDeferredPrompt] =
+    useState<BeforeInstallPromptEvent | null>(null);
   const [isInstallable, setIsInstallable] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
 
   useEffect(() => {
     // Check if already installed
-    setIsInstalled(window.matchMedia('(display-mode: standalone)').matches);
+    setIsInstalled(window.matchMedia("(display-mode: standalone)").matches);
 
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
@@ -27,12 +27,15 @@ export const usePWAInstall = () => {
       setDeferredPrompt(null);
     };
 
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    window.addEventListener('appinstalled', handleAppInstalled);
+    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+    window.addEventListener("appinstalled", handleAppInstalled);
 
     return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-      window.removeEventListener('appinstalled', handleAppInstalled);
+      window.removeEventListener(
+        "beforeinstallprompt",
+        handleBeforeInstallPrompt,
+      );
+      window.removeEventListener("appinstalled", handleAppInstalled);
     };
   }, []);
 
@@ -41,8 +44,8 @@ export const usePWAInstall = () => {
 
     deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
-    
-    if (outcome === 'accepted') {
+
+    if (outcome === "accepted") {
       setDeferredPrompt(null);
       setIsInstallable(false);
     }
@@ -51,6 +54,6 @@ export const usePWAInstall = () => {
   return {
     isInstallable,
     isInstalled,
-    installApp
+    installApp,
   };
 };
