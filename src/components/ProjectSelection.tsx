@@ -27,21 +27,24 @@ interface ProjectSelectionProps {
   onLogout?: () => void;
 }
 
-export const ProjectSelection = ({ 
-  credentials, 
-  onProjectsSelected, 
-  onBack, 
-  projects, 
+export const ProjectSelection = ({
+  credentials,
+  onProjectsSelected,
+  onBack,
+  projects,
   setProjects,
-  onLogout 
+  onLogout
 }: ProjectSelectionProps) => {
   const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const fetchProjects = async () => {
-      if (projects.length > 0) return; // Already loaded
-      
+      if (projects.length > 0) {
+        console.log('Projects already loaded, skipping fetch in ProjectSelection');
+        return; // Already loaded
+      }
+
       setLoading(true);
       try {
         const fetchedProjects = await apiService.fetchProjects(credentials);

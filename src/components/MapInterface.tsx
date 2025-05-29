@@ -11,6 +11,7 @@ import { SearchBar } from '@/components/SearchBar';
 import { CoordinateDisplay } from '@/components/CoordinateDisplay';
 import { ManualCoordinateEntry } from '@/components/ManualCoordinateEntry';
 import { MapContainer } from '@/components/MapContainer';
+import { ProjectSelector } from '@/components/ProjectSelector';
 import { useMapAlerts } from '@/hooks/useMapAlerts';
 import { useMapSearch } from '@/hooks/useMapSearch';
 import { useMapInteraction } from '@/hooks/useMapInteraction';
@@ -29,18 +30,25 @@ interface MapInterfaceProps {
   coordinates: Coordinates | null;
   credentials?: any;
   projects?: any[];
+  isLoadingProjects?: boolean;
 }
 
 // Default Mapbox token
 const DEFAULT_MAPBOX_TOKEN = 'pk.eyJ1IjoibHVhbmRybyIsImEiOiJjanY2djRpdnkwOWdqM3lwZzVuaGIxa3VsIn0.jamcK2t2I1j3TXkUQFIsjQ';
 
-export const MapInterface = ({ onCoordinatesSet, onLogout, coordinates, credentials, projects = [] }: MapInterfaceProps) => {
+interface Project {
+  projectId: string;
+  name: string;
+}
+
+export const MapInterface = ({ onCoordinatesSet, onLogout, coordinates, credentials, projects = [], isLoadingProjects = false }: MapInterfaceProps) => {
   const { t } = useTranslation();
   const [selectedCoords, setSelectedCoords] = useState<Coordinates | null>(coordinates);
   const [showManualEntry, setShowManualEntry] = useState(false);
   const [mapboxToken, setMapboxToken] = useState('');
   const [showTokenInput, setShowTokenInput] = useState(false);
-  
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+
   const { isInstallable, installApp } = usePWAInstall();
 
   // Check for environment variable or use default token
@@ -61,8 +69,33 @@ export const MapInterface = ({ onCoordinatesSet, onLogout, coordinates, credenti
     }
   }, [coordinates]);
 
+  // Initialize selected project from localStorage or default to first project
+  useEffect(() => {
+    if (projects.length > 0) {
+      const savedProjectId = localStorage.getItem('selectedProjectId');
+      const savedProject = savedProjectId
+        ? projects.find(p => p.projectId === savedProjectId)
+        : null;
+
+      // Use saved project if found, otherwise default to first project
+      const projectToSelect = savedProject || projects[0];
+      setSelectedProject(projectToSelect);
+    }
+  }, [projects]);
+
+  // Save selected project to localStorage when it changes
+  useEffect(() => {
+    if (selectedProject) {
+      localStorage.setItem('selectedProjectId', selectedProject.projectId);
+    }
+  }, [selectedProject]);
+
   const handleCoordinatesChange = (coords: Coordinates) => {
     setSelectedCoords(coords);
+  };
+
+  const handleProjectSelect = (project: Project) => {
+    setSelectedProject(project);
   };
 
   const { mapRef, mapInstanceRef, markerRef, isMapLoaded } = useMapInteraction(
@@ -78,7 +111,7 @@ export const MapInterface = ({ onCoordinatesSet, onLogout, coordinates, credenti
     isLoadingAlerts,
     loadAlerts,
     cleanupMarkers
-  } = useMapAlerts(credentials, projects, mapInstanceRef);
+  } = useMapAlerts(credentials, selectedProject, mapInstanceRef);
 
   const {
     searchQuery,
@@ -92,10 +125,10 @@ export const MapInterface = ({ onCoordinatesSet, onLogout, coordinates, credenti
 
   // Load alerts when map loads and credentials are available
   useEffect(() => {
-    if (isMapLoaded && credentials && projects.length > 0) {
+    if (isMapLoaded && credentials && selectedProject) {
       loadAlerts();
     }
-  }, [isMapLoaded, credentials, projects]);
+  }, [isMapLoaded, credentials, selectedProject, loadAlerts]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -169,15 +202,24 @@ export const MapInterface = ({ onCoordinatesSet, onLogout, coordinates, credenti
         selectedCoords={selectedCoords}
         isMapLoaded={isMapLoaded}
       />
-      
+
       {/* Mobile-optimized floating header with safe area */}
       <div className="absolute top-0 left-0 right-0 z-10 bg-white/95 backdrop-blur-sm border-b border-gray-200">
-        <div 
+        <div
           className="flex justify-between items-center px-4 py-3 h-16"
           style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top))' }}
         >
-          <h1 className="text-lg font-bold text-gray-800">{t('app.title')}</h1>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            <h1 className="text-lg font-bold text-gray-800 hidden md:block">{t('app.title')}</h1>
+            <h1 className="text-sm font-bold text-gray-800 md:hidden truncate">{t('app.title')}</h1>
+            <ProjectSelector
+              projects={projects}
+              selectedProject={selectedProject}
+              onProjectSelect={handleProjectSelect}
+              isLoading={isLoadingProjects || isLoadingAlerts}
+            />
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
             <LanguageSwitcher />
             {isInstallable && (
               <Button

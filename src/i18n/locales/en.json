@@ -66,7 +66,9 @@
     "pleaseSelectAtLeast": "Please select at least one project",
     "continueToAlert": "Continue to Alert Form ({{count}} selected)",
     "selected": "Selected {{count}} project{{plural}}:",
-    "logout": "Logout"
+    "logout": "Logout",
+    "selectProject": "Select Project",
+    "noProjects": "No Projects"
   },
   "alert": {
     "title": "Create Alert",
