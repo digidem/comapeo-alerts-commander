@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { MapPin, LogOut, Settings, Download } from "lucide-react";
+import { LogOut, Settings, Download } from "lucide-react";
 import { toast } from "sonner";
 import { usePWAInstall } from "@/hooks/usePWAInstall";
 import { AlertPopup } from "@/components/AlertPopup";
@@ -99,13 +99,13 @@ export const MapInterface = ({
     }
   }, [selectedProject]);
 
-  const handleCoordinatesChange = (coords: Coordinates) => {
+  const handleCoordinatesChange = useCallback((coords: Coordinates) => {
     setSelectedCoords(coords);
-  };
+  }, []);
 
-  const handleProjectSelect = (project: Project) => {
+  const handleProjectSelect = useCallback((project: Project) => {
     setSelectedProject(project);
-  };
+  }, []);
 
   const { mapRef, mapInstanceRef, markerRef, isMapLoaded } = useMapInteraction(
     mapboxToken,
@@ -114,13 +114,14 @@ export const MapInterface = ({
   );
 
   const {
-    alerts,
     selectedAlert,
     setSelectedAlert,
     isLoadingAlerts,
     loadAlerts,
     cleanupMarkers,
-  } = useMapAlerts(credentials, selectedProject, mapInstanceRef);
+  } = useMapAlerts(credentials, selectedProject, mapInstanceRef, {
+    autoFitBounds: false, // Prevent automatic zoom changes when alerts are loaded
+  });
 
   const {
     searchQuery,
@@ -130,7 +131,9 @@ export const MapInterface = ({
     searchInputRef,
     handleSearch,
     handleClearSearch,
-  } = useMapSearch(mapInstanceRef.current, markerRef, handleCoordinatesChange);
+  } = useMapSearch(mapInstanceRef.current, markerRef, handleCoordinatesChange, {
+    autoZoom: false, // Prevent automatic zoom changes when searching
+  });
 
   // Load alerts when map loads and credentials are available
   useEffect(() => {
@@ -150,15 +153,13 @@ export const MapInterface = ({
     setShowTokenInput(false);
   };
 
-  const handleManualCoords = (coords: Coordinates) => {
+  const handleManualCoords = useCallback((coords: Coordinates) => {
     setSelectedCoords(coords);
 
-    // Update map center and marker
+    // Update map center and marker without changing zoom
     if (mapInstanceRef.current) {
-      mapInstanceRef.current.flyTo({
-        center: [coords.lng, coords.lat],
-        zoom: 10,
-      });
+      // Just center the map without changing zoom to prevent jarring experience
+      mapInstanceRef.current.setCenter([coords.lng, coords.lat]);
 
       if (markerRef.current) {
         markerRef.current.remove();
@@ -170,14 +171,17 @@ export const MapInterface = ({
         .setLngLat([coords.lng, coords.lat])
         .addTo(mapInstanceRef.current);
     }
-  };
+  }, []);
 
-  const handleRecentSearchClick = (search: string) => {
-    setSearchQuery(search);
-    handleSearch();
-  };
+  const handleRecentSearchClick = useCallback(
+    (search: string) => {
+      setSearchQuery(search);
+      handleSearch();
+    },
+    [handleSearch],
+  );
 
-  const handleContinue = () => {
+  const handleContinue = useCallback(() => {
     if (!selectedCoords) {
       toast.error(t("map.pleaseSelectCoordinates"));
       return;
@@ -189,7 +193,7 @@ export const MapInterface = ({
     }
 
     onCoordinatesSet(selectedCoords);
-  };
+  }, [selectedCoords, t, onCoordinatesSet]);
 
   if (showTokenInput) {
     return (
@@ -206,10 +210,9 @@ export const MapInterface = ({
     <div className="relative h-screen w-screen overflow-hidden">
       <MapContainer
         mapRef={mapRef}
-        mapInstance={mapInstanceRef.current}
-        marker={markerRef.current}
         selectedCoords={selectedCoords}
         isMapLoaded={isMapLoaded}
+        searchInputRef={searchInputRef}
       />
 
       {/* Mobile-optimized floating header with safe area */}

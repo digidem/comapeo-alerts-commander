@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import mapboxgl from "mapbox-gl";
@@ -18,9 +18,60 @@ export const useMapInteraction = (
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<mapboxgl.Map | null>(null);
   const markerRef = useRef<mapboxgl.Marker | null>(null);
+  const initializedRef = useRef(false);
 
+  // Memoize the click handler to prevent recreation
+  const handleMapClick = useCallback(
+    (e: mapboxgl.MapMouseEvent) => {
+      const coords = {
+        lat: parseFloat(e.lngLat.lat.toFixed(6)),
+        lng: parseFloat(e.lngLat.lng.toFixed(6)),
+      };
+
+      onCoordinatesChange(coords);
+
+      // Haptic feedback on mobile
+      if ("vibrate" in navigator) {
+        navigator.vibrate(50);
+      }
+
+      // Update marker with bounce animation
+      if (markerRef.current) {
+        markerRef.current.remove();
+      }
+
+      const map = mapInstanceRef.current;
+      if (!map) return;
+
+      markerRef.current = new mapboxgl.Marker({
+        color: "#ef4444",
+        scale: 1.2,
+      })
+        .setLngLat([coords.lng, coords.lat])
+        .addTo(map);
+
+      // Animate marker
+      setTimeout(() => {
+        if (markerRef.current) {
+          markerRef.current.getElement().style.transform = "scale(1)";
+          markerRef.current.getElement().style.transition =
+            "transform 0.3s ease-out";
+        }
+      }, 100);
+
+      toast.success(
+        t("map.locationSelected", {
+          lat: coords.lat.toString(),
+          lng: coords.lng.toString(),
+        }),
+      );
+    },
+    [onCoordinatesChange, t],
+  );
+
+  // Initialize map only once
   useEffect(() => {
-    if (!mapRef.current || !mapboxToken) return;
+    if (!mapRef.current || !mapboxToken || initializedRef.current) return;
 
     try {
       // Initialize Mapbox
@@ -48,70 +99,49 @@ export const useMapInteraction = (
         toast.error(t("map.mapConfigError"));
       });
 
-      map.on("click", (e) => {
-        const coords = {
-          lat: parseFloat(e.lngLat.lat.toFixed(6)),
-          lng: parseFloat(e.lngLat.lng.toFixed(6)),
-        };
-
-        onCoordinatesChange(coords);
-
-        // Haptic feedback on mobile
-        if ("vibrate" in navigator) {
-          navigator.vibrate(50);
-        }
-
-        // Update marker with bounce animation
-        if (markerRef.current) {
-          markerRef.current.remove();
-        }
-
-        markerRef.current = new mapboxgl.Marker({
-          color: "#ef4444",
-          scale: 1.2,
-        })
-          .setLngLat([coords.lng, coords.lat])
-          .addTo(map);
-
-        // Animate marker
-        setTimeout(() => {
-          if (markerRef.current) {
-            markerRef.current.getElement().style.transform = "scale(1)";
-            markerRef.current.getElement().style.transition =
-              "transform 0.3s ease-out";
-          }
-        }, 100);
-
-        toast.success(
-          t("map.locationSelected", {
-            lat: coords.lat.toString(),
-            lng: coords.lng.toString(),
-          }),
-        );
-      });
-
-      // Add existing marker if coordinates exist
-      if (selectedCoords) {
-        markerRef.current = new mapboxgl.Marker({
-          color: "#ef4444",
-        })
-          .setLngLat([selectedCoords.lng, selectedCoords.lat])
-          .addTo(map);
-      }
+      map.on("click", handleMapClick);
 
       mapInstanceRef.current = map;
+      initializedRef.current = true;
 
       return () => {
         if (markerRef.current) {
           markerRef.current.remove();
         }
         map.remove();
+        initializedRef.current = false;
       };
     } catch (error) {
       console.error("Failed to initialize map:", error);
       toast.error(t("map.mapConfigError"));
     }
-  }, [mapboxToken, selectedCoords, t, onCoordinatesChange]);
+  }, [mapboxToken, t, handleMapClick]); // Remove selectedCoords from dependencies
+
+  // Update marker when selectedCoords changes (without recreating map)
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map || !isMapLoaded) return;
+
+    if (selectedCoords) {
+      // Remove existing marker
+      if (markerRef.current) {
+        markerRef.current.remove();
+      }
+
+      // Add new marker
+      markerRef.current = new mapboxgl.Marker({
+        color: "#ef4444",
+      })
+        .setLngLat([selectedCoords.lng, selectedCoords.lat])
+        .addTo(map);
+    } else {
+      // Remove marker if no coordinates
+      if (markerRef.current) {
+        markerRef.current.remove();
+        markerRef.current = null;
+      }
+    }
+  }, [selectedCoords, isMapLoaded]);
 
   return {
     mapRef,

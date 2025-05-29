@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { toast } from "sonner";
 import { apiService } from "@/services/apiService";
-import { useTranslation } from "react-i18next";
 import mapboxgl from "mapbox-gl";
 
 export interface MapAlert {
@@ -18,62 +17,63 @@ export const useMapAlerts = (
   credentials: any,
   selectedProject: any | null,
   mapInstanceRef: React.MutableRefObject<mapboxgl.Map | null>,
+  options: { autoFitBounds?: boolean } = { autoFitBounds: false },
 ) => {
-  const { t } = useTranslation();
   const [alerts, setAlerts] = useState<MapAlert[]>([]);
   const [selectedAlert, setSelectedAlert] = useState<MapAlert | null>(null);
   const [isLoadingAlerts, setIsLoadingAlerts] = useState(false);
   const alertMarkersRef = useRef<mapboxgl.Marker[]>([]);
 
-  const addAlertMarkers = (alertList: MapAlert[]) => {
-    const mapInstance = mapInstanceRef.current;
-    if (!mapInstance) {
-      console.warn(
-        "Map instance not available when trying to add alert markers",
-      );
-      return;
-    }
-
-    // Clear existing alert markers
-    alertMarkersRef.current.forEach((marker) => marker.remove());
-    alertMarkersRef.current = [];
-
-    if (alertList.length === 0) {
-      return;
-    }
-
-    // Add new alert markers
-    alertList.forEach((alert) => {
-      // Validate coordinates
-      if (
-        !alert.coordinates ||
-        !Array.isArray(alert.coordinates) ||
-        alert.coordinates.length !== 2
-      ) {
-        console.error(
-          `Invalid coordinates for alert ${alert.id}:`,
-          alert.coordinates,
+  const addAlertMarkers = useCallback(
+    (alertList: MapAlert[]) => {
+      const mapInstance = mapInstanceRef.current;
+      if (!mapInstance) {
+        console.warn(
+          "Map instance not available when trying to add alert markers",
         );
         return;
       }
 
-      const [lng, lat] = alert.coordinates;
-      if (
-        typeof lng !== "number" ||
-        typeof lat !== "number" ||
-        isNaN(lng) ||
-        isNaN(lat)
-      ) {
-        console.error(`Invalid coordinate values for alert ${alert.id}:`, {
-          lng,
-          lat,
-        });
+      // Clear existing alert markers
+      alertMarkersRef.current.forEach((marker) => marker.remove());
+      alertMarkersRef.current = [];
+
+      if (alertList.length === 0) {
         return;
       }
 
-      const el = document.createElement("div");
-      el.className = "alert-marker";
-      el.style.cssText = `
+      // Add new alert markers
+      alertList.forEach((alert) => {
+        // Validate coordinates
+        if (
+          !alert.coordinates ||
+          !Array.isArray(alert.coordinates) ||
+          alert.coordinates.length !== 2
+        ) {
+          console.error(
+            `Invalid coordinates for alert ${alert.id}:`,
+            alert.coordinates,
+          );
+          return;
+        }
+
+        const [lng, lat] = alert.coordinates;
+        if (
+          typeof lng !== "number" ||
+          typeof lat !== "number" ||
+          isNaN(lng) ||
+          isNaN(lat)
+        ) {
+          console.error(`Invalid coordinate values for alert ${alert.id}:`, {
+            lng,
+            lat,
+          });
+          return;
+        }
+
+        const el = document.createElement("div");
+        el.className = "alert-marker";
+        el.style.cssText = `
         background-color: #ef4444;
         width: 24px;
         height: 24px;
@@ -88,10 +88,10 @@ export const useMapAlerts = (
         z-index: 1000;
       `;
 
-      // Add label
-      const label = document.createElement("div");
-      label.textContent = alert.name;
-      label.style.cssText = `
+        // Add label
+        const label = document.createElement("div");
+        label.textContent = alert.name;
+        label.style.cssText = `
         position: absolute;
         top: -30px;
         left: 50%;
@@ -105,44 +105,49 @@ export const useMapAlerts = (
         pointer-events: none;
         z-index: 1001;
       `;
-      el.appendChild(label);
+        el.appendChild(label);
 
-      el.addEventListener("click", () => {
-        setSelectedAlert(alert);
+        el.addEventListener("click", () => {
+          setSelectedAlert(alert);
 
-        // Haptic feedback
-        if ("vibrate" in navigator) {
-          navigator.vibrate(50);
+          // Haptic feedback
+          if ("vibrate" in navigator) {
+            navigator.vibrate(50);
+          }
+        });
+
+        try {
+          const marker = new mapboxgl.Marker(el)
+            .setLngLat([lng, lat])
+            .addTo(mapInstance);
+
+          alertMarkersRef.current.push(marker);
+        } catch (error) {
+          console.error(
+            `Failed to create marker for alert ${alert.id}:`,
+            error,
+          );
         }
       });
 
-      try {
-        const marker = new mapboxgl.Marker(el)
-          .setLngLat([lng, lat])
-          .addTo(mapInstance);
+      // Fit map to show all markers if there are any and autoFitBounds is enabled
+      if (options.autoFitBounds && alertMarkersRef.current.length > 0) {
+        const coordinates = alertList.map((alert) => alert.coordinates);
+        const bounds = coordinates.reduce(
+          (bounds, coord) => {
+            return bounds.extend(coord);
+          },
+          new mapboxgl.LngLatBounds(coordinates[0], coordinates[0]),
+        );
 
-        alertMarkersRef.current.push(marker);
-      } catch (error) {
-        console.error(`Failed to create marker for alert ${alert.id}:`, error);
+        mapInstance.fitBounds(bounds, {
+          padding: 50,
+          maxZoom: 15,
+        });
       }
-    });
-
-    // Fit map to show all markers if there are any
-    if (alertMarkersRef.current.length > 0) {
-      const coordinates = alertList.map((alert) => alert.coordinates);
-      const bounds = coordinates.reduce(
-        (bounds, coord) => {
-          return bounds.extend(coord);
-        },
-        new mapboxgl.LngLatBounds(coordinates[0], coordinates[0]),
-      );
-
-      mapInstance.fitBounds(bounds, {
-        padding: 50,
-        maxZoom: 15,
-      });
-    }
-  };
+    },
+    [options.autoFitBounds],
+  );
 
   const loadAlerts = useCallback(async () => {
     if (!credentials || !selectedProject) {

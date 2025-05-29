@@ -12,6 +12,7 @@ export const useMapSearch = (
   mapInstance: mapboxgl.Map | null,
   markerRef: React.MutableRefObject<mapboxgl.Marker | null>,
   onCoordinatesChange: (coords: Coordinates) => void,
+  options: { autoZoom?: boolean } = { autoZoom: false },
 ) => {
   const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState("");
@@ -75,10 +76,16 @@ export const useMapSearch = (
 
         // Update map center and marker
         if (mapInstance) {
-          mapInstance.flyTo({
-            center: [lng, lat],
-            zoom: 10,
-          });
+          // Only auto-zoom if enabled
+          if (options.autoZoom) {
+            mapInstance.flyTo({
+              center: [lng, lat],
+              zoom: 10,
+            });
+          } else {
+            // Just center the map without changing zoom
+            mapInstance.setCenter([lng, lat]);
+          }
 
           if (markerRef.current) {
             markerRef.current.remove();
