@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Copy, CheckCircle, X, Loader } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import { apiService } from "@/services/apiService";
 
 interface Coordinates {
@@ -41,6 +42,7 @@ export const AlertForm = ({
   onBack,
   onSuccess,
 }: AlertFormProps) => {
+  const { t } = useTranslation();
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
   const [sourceId, setSourceId] = useState("");
@@ -58,14 +60,14 @@ export const AlertForm = ({
     const coordText = `${coordinates.lat}, ${coordinates.lng}`;
     try {
       await navigator.clipboard.writeText(coordText);
-      toast.success("Coordinates copied to clipboard");
+      toast.success(t("map.coordinatesCopied"));
 
       // Haptic feedback
       if ("vibrate" in navigator) {
         navigator.vibrate(50);
       }
     } catch (error) {
-      toast.error("Failed to copy coordinates");
+      toast.error(t("map.failedToCopy"));
     }
   };
 
@@ -73,14 +75,12 @@ export const AlertForm = ({
     e.preventDefault();
 
     if (!startTime || !endTime || !sourceId || !alertName) {
-      toast.error("Please fill in all fields");
+      toast.error(t("alert.fillAllFields"));
       return;
     }
 
     if (!validateSlug(alertName)) {
-      toast.error(
-        "Alert name must be in slug format (lowercase letters, numbers, and hyphens only)",
-      );
+      toast.error(t("alert.slugFormatError"));
       return;
     }
 
@@ -88,7 +88,7 @@ export const AlertForm = ({
     const end = new Date(endTime);
 
     if (start >= end) {
-      toast.error("End time must be after start time");
+      toast.error(t("alert.endTimeAfterStart"));
       return;
     }
 
@@ -128,7 +128,10 @@ export const AlertForm = ({
       if (successCount === selectedProjects.length) {
         setSubmissionState("success");
         toast.success(
-          `Successfully created alert for ${successCount} project${successCount !== 1 ? "s" : ""}`,
+          t("alert.successMessage", {
+            count: successCount,
+            plural: successCount !== 1 ? "s" : "",
+          }),
         );
 
         // Haptic feedback for success
@@ -143,15 +146,19 @@ export const AlertForm = ({
       } else if (successCount > 0) {
         setSubmissionState("partial");
         setErrorMessage(
-          `Created alert for ${successCount} project${successCount !== 1 ? "s" : ""}, failed for ${errorCount}`,
+          t("alert.partialMessage", {
+            successCount,
+            successPlural: successCount !== 1 ? "s" : "",
+            errorCount,
+          }),
         );
       } else {
         setSubmissionState("error");
-        setErrorMessage("Failed to create alert for any project");
+        setErrorMessage(t("alert.failedMessage"));
       }
     } catch (error) {
       setSubmissionState("error");
-      setErrorMessage("An unexpected error occurred");
+      setErrorMessage(t("alert.unexpectedError"));
       console.error("Error creating alerts:", error);
     }
   };
@@ -162,14 +169,14 @@ export const AlertForm = ({
         return (
           <>
             <Loader className="w-4 h-4 animate-spin" />
-            Creating alerts...
+            {t("alert.creatingAlerts")}
           </>
         );
       case "success":
         return (
           <>
             <CheckCircle className="w-4 h-4" />
-            Alert created successfully
+            {t("alert.alertCreatedSuccessfully")}
           </>
         );
       case "error":
@@ -178,12 +185,15 @@ export const AlertForm = ({
           <>
             <X className="w-4 h-4" />
             {submissionState === "partial"
-              ? "Partially completed"
-              : "Creation failed"}
+              ? t("alert.partiallyCompleted")
+              : t("alert.creationFailed")}
           </>
         );
       default:
-        return `Submit Alert to ${selectedProjects.length} Project${selectedProjects.length !== 1 ? "s" : ""}`;
+        return t("alert.submitAlert", {
+          count: selectedProjects.length,
+          plural: selectedProjects.length !== 1 ? "s" : "",
+        });
     }
   };
 
@@ -205,7 +215,7 @@ export const AlertForm = ({
 
   const projectsText =
     selectedProjectNames.length > 2
-      ? `${selectedProjectNames.slice(0, 2).join(", ")} and ${selectedProjectNames.length - 2} more`
+      ? `${selectedProjectNames.slice(0, 2).join(", ")} ${t("common.and")} ${selectedProjectNames.length - 2} ${t("common.more")}`
       : selectedProjectNames.join(", ");
 
   return (
@@ -218,21 +228,23 @@ export const AlertForm = ({
             className="flex items-center gap-2"
           >
             <ArrowLeft className="w-4 h-4" />
-            Back
+            {t("alert.back")}
           </Button>
-          <h1 className="text-2xl font-bold text-gray-800">Create Alert</h1>
+          <h1 className="text-2xl font-bold text-gray-800">
+            {t("alert.title")}
+          </h1>
         </div>
 
         <Card>
           <CardHeader>
-            <CardTitle>Alert Details</CardTitle>
+            <CardTitle>{t("alert.subtitle")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             {/* Location & Projects Summary */}
             <div className="bg-gray-50 rounded-lg p-4 space-y-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">Location:</p>
+                  <p className="text-sm text-gray-600">{t("alert.location")}</p>
                   <p className="font-mono text-sm">
                     {coordinates.lat}, {coordinates.lng}
                   </p>
@@ -244,13 +256,15 @@ export const AlertForm = ({
                   className="flex items-center gap-1"
                 >
                   <Copy className="w-3 h-3" />
-                  Copy
+                  {t("alert.copy")}
                 </Button>
               </div>
 
               <div>
                 <p className="text-sm text-gray-600">
-                  Selected Projects ({selectedProjects.length}):
+                  {t("alert.selectedProjects", {
+                    count: selectedProjects.length,
+                  })}
                 </p>
                 <p className="text-sm text-gray-800">{projectsText}</p>
               </div>
@@ -260,7 +274,9 @@ export const AlertForm = ({
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="startTime">Detection Start Time</Label>
+                  <Label htmlFor="startTime">
+                    {t("alert.detectionStartTime")}
+                  </Label>
                   <Input
                     id="startTime"
                     type="datetime-local"
@@ -272,7 +288,7 @@ export const AlertForm = ({
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="endTime">Detection End Time</Label>
+                  <Label htmlFor="endTime">{t("alert.detectionEndTime")}</Label>
                   <Input
                     id="endTime"
                     type="datetime-local"
@@ -285,11 +301,11 @@ export const AlertForm = ({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="sourceId">Source ID</Label>
+                <Label htmlFor="sourceId">{t("alert.sourceId")}</Label>
                 <Input
                   id="sourceId"
                   type="text"
-                  placeholder="3daada86-2216-4889-b501-bc91ceb13c8f"
+                  placeholder={t("alert.sourceIdPlaceholder")}
                   value={sourceId}
                   onChange={(e) => setSourceId(e.target.value)}
                   required
@@ -298,22 +314,22 @@ export const AlertForm = ({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="alertName">Alert Name (slug format)</Label>
+                <Label htmlFor="alertName">{t("alert.alertName")}</Label>
                 <Input
                   id="alertName"
                   type="text"
-                  placeholder="fire-detection"
+                  placeholder={t("alert.alertNamePlaceholder")}
                   value={alertName}
                   onChange={(e) => setAlertName(e.target.value)}
                   className={`h-12 ${!alertName || validateSlug(alertName) ? "" : "border-red-500"}`}
                   required
                 />
                 <p className="text-sm text-gray-600">
-                  Use lowercase letters, numbers, and hyphens only
+                  {t("alert.slugFormatHelp")}
                 </p>
                 {alertName && !validateSlug(alertName) && (
                   <p className="text-sm text-red-600">
-                    Invalid format. Example: fire-detection
+                    {t("alert.invalidFormat")}
                   </p>
                 )}
               </div>
@@ -348,7 +364,7 @@ export const AlertForm = ({
                     setErrorMessage("");
                   }}
                 >
-                  Try Again
+                  {t("alert.tryAgain")}
                 </Button>
               )}
             </form>
