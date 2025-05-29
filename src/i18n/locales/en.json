@@ -19,6 +19,7 @@
   },
   "map": {
     "searchPlaceholder": "Search for a location...",
+    "searchTip": "Search for any location worldwide using Mapbox geocoding",
     "recentSearches": "Recent searches:",
     "selectedLocation": "Selected Location",
     "continue": "Continue",

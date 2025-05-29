@@ -5,6 +5,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { ArrowLeft, LogOut, FolderOpen } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import { apiService } from '@/services/apiService';
 
 interface Credentials {
@@ -35,6 +36,7 @@ export const ProjectSelection = ({
   setProjects,
   onLogout
 }: ProjectSelectionProps) => {
+  const { t } = useTranslation();
   const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -49,10 +51,10 @@ export const ProjectSelection = ({
       try {
         const fetchedProjects = await apiService.fetchProjects(credentials);
         setProjects(fetchedProjects);
-        toast.success(`Found ${fetchedProjects.length} projects`);
+        toast.success(t('projects.foundProjects', { count: fetchedProjects.length }));
       } catch (error) {
         console.error('Error fetching projects:', error);
-        toast.error('Failed to fetch projects');
+        toast.error(t('projects.failedToFetch'));
       } finally {
         setLoading(false);
       }
@@ -62,7 +64,7 @@ export const ProjectSelection = ({
   }, [credentials, projects.length, setProjects]);
 
   const handleProjectToggle = (projectId: string) => {
-    setSelectedProjects(prev => 
+    setSelectedProjects(prev =>
       prev.includes(projectId)
         ? prev.filter(id => id !== projectId)
         : [...prev, projectId]
@@ -71,7 +73,7 @@ export const ProjectSelection = ({
 
   const handleContinue = () => {
     if (selectedProjects.length === 0) {
-      toast.error('Please select at least one project');
+      toast.error(t('projects.pleaseSelectAtLeast'));
       return;
     }
     onProjectsSelected(selectedProjects);
@@ -84,7 +86,7 @@ export const ProjectSelection = ({
           <CardContent className="pt-6">
             <div className="text-center space-y-4">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-              <p>Loading projects...</p>
+              <p>{t('projects.loadingProjects')}</p>
             </div>
           </CardContent>
         </Card>
@@ -101,21 +103,21 @@ export const ProjectSelection = ({
             <div className="mx-auto mb-4 w-12 h-12 bg-gray-500 rounded-full flex items-center justify-center">
               <FolderOpen className="w-6 h-6 text-white" />
             </div>
-            <CardTitle className="text-xl font-bold">No Projects Available</CardTitle>
+            <CardTitle className="text-xl font-bold">{t('projects.noProjectsTitle')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 text-center">
             <p className="text-gray-600">
-              No projects are available for your account. Please contact your administrator for access.
+              {t('projects.noProjectsMessage')}
             </p>
             <div className="space-y-2">
               <Button onClick={onBack} variant="outline" className="w-full h-12 text-base">
                 <ArrowLeft className="w-4 h-4 mr-2" />
-                <span className="hidden sm:inline">Back to Map</span>
+                <span className="hidden sm:inline">{t('projects.backToMap')}</span>
               </Button>
               {onLogout && (
                 <Button onClick={onLogout} variant="outline" className="w-full h-12 text-base">
                   <LogOut className="w-4 h-4 mr-2" />
-                  <span className="hidden sm:inline">Logout</span>
+                  <span className="hidden sm:inline">{t('projects.logout')}</span>
                 </Button>
               )}
             </div>
@@ -128,19 +130,19 @@ export const ProjectSelection = ({
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       {/* Mobile-first header */}
-      <div 
+      <div
         className="bg-white/95 backdrop-blur-sm border-b border-gray-200 px-4 py-3"
         style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top))' }}
       >
         <div className="flex justify-between items-center">
           <Button variant="outline" onClick={onBack} className="flex items-center gap-2">
             <ArrowLeft className="w-4 h-4" />
-            <span className="hidden sm:inline">Back to Map</span>
+            <span className="hidden sm:inline">{t('projects.backToMap')}</span>
           </Button>
           {onLogout && (
             <Button variant="outline" onClick={onLogout} className="flex items-center gap-2">
               <LogOut className="w-4 h-4" />
-              <span className="hidden sm:inline">Logout</span>
+              <span className="hidden sm:inline">{t('projects.logout')}</span>
             </Button>
           )}
         </div>
@@ -151,9 +153,9 @@ export const ProjectSelection = ({
         <div className="max-w-2xl mx-auto">
           <Card className="mt-4">
             <CardHeader>
-              <CardTitle className="text-xl md:text-2xl font-bold text-center">Select Projects</CardTitle>
+              <CardTitle className="text-xl md:text-2xl font-bold text-center">{t('projects.title')}</CardTitle>
               <p className="text-center text-gray-600 text-sm md:text-base">
-                Choose which projects to send the alert to
+                {t('projects.subtitle')}
               </p>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -179,7 +181,10 @@ export const ProjectSelection = ({
               {selectedProjects.length > 0 && (
                 <div className="mt-6 p-4 bg-green-50 rounded-lg">
                   <p className="text-sm text-green-700 mb-3">
-                    Selected {selectedProjects.length} project{selectedProjects.length !== 1 ? 's' : ''}:
+                    {t('projects.selected', {
+                      count: selectedProjects.length,
+                      plural: selectedProjects.length !== 1 ? 's' : ''
+                    })}
                   </p>
                   <ul className="text-sm text-green-600 space-y-1">
                     {selectedProjects.map(projectId => {
@@ -192,12 +197,12 @@ export const ProjectSelection = ({
                 </div>
               )}
 
-              <Button 
-                onClick={handleContinue} 
+              <Button
+                onClick={handleContinue}
                 className="w-full mt-6 h-12 text-base"
                 disabled={selectedProjects.length === 0}
               >
-                Continue to Alert Form ({selectedProjects.length} selected)
+                {t('projects.continueToAlert', { count: selectedProjects.length })}
               </Button>
             </CardContent>
           </Card>

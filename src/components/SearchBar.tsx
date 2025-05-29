@@ -81,7 +81,7 @@ export const SearchBar = ({
         )}
         
         <p className="text-xs text-gray-500">
-          Search for any location worldwide using Mapbox geocoding
+          {t('map.searchTip')}
         </p>
       </div>
     </div>

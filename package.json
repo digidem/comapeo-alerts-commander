@@ -8,7 +8,11 @@
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "translate:pt": "npx ai-markdown-translator --input ./src/i18n/locales/en.json --output ./src/i18n/locales/pt.json --language \"Portuguese\" --extension \"json\" --rename --log --log-file translation-pt.log --log-dir ./logs --retry-count 3 --retry-delay 5 --model \"gpt-4.1-nano\"",
+    "translate:es": "npx ai-markdown-translator --input ./src/i18n/locales/en.json --output ./src/i18n/locales/es.json --language \"Spanish\" --extension \"json\" --rename --log --log-file translation-es.log --log-dir ./logs --retry-count 3 --retry-delay 5 --model \"gpt-4.1-nano\"",
+    "translate:fr": "npx ai-markdown-translator --input ./src/i18n/locales/en.json --output ./src/i18n/locales/fr.json --language \"French\" --extension \"json\" --rename --log --log-file translation-fr.log --log-dir ./logs --retry-count 3 --retry-delay 5 --model \"gpt-4.1-nano\"",
+    "translate:all": "npm run translate:pt && npm run translate:es && npm run translate:fr"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
