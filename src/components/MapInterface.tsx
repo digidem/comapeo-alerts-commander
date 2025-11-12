@@ -26,7 +26,10 @@ interface Coordinates {
 }
 
 interface MapInterfaceProps {
-  onCoordinatesSet: (coordinates: Coordinates) => void;
+  onCoordinatesSet: (
+    coordinates: Coordinates,
+    currentSelectedProjectId?: string,
+  ) => void;
   onLogout: () => void;
   coordinates: Coordinates | null;
   credentials?: any;
@@ -196,8 +199,8 @@ export const MapInterface = ({
       navigator.vibrate([50, 100, 50]);
     }
 
-    onCoordinatesSet(selectedCoords);
-  }, [selectedCoords, t, onCoordinatesSet]);
+    onCoordinatesSet(selectedCoords, selectedProject?.projectId);
+  }, [selectedCoords, selectedProject, t, onCoordinatesSet]);
 
   const handleCancelCoordinates = useCallback(() => {
     setSelectedCoords(null);

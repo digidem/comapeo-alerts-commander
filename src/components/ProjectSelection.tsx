@@ -26,6 +26,7 @@ interface ProjectSelectionProps {
   projects: Project[];
   setProjects: (projects: Project[]) => void;
   onLogout?: () => void;
+  defaultSelectedProjectId?: string | null;
 }
 
 export const ProjectSelection = ({
@@ -35,9 +36,12 @@ export const ProjectSelection = ({
   projects,
   setProjects,
   onLogout,
+  defaultSelectedProjectId,
 }: ProjectSelectionProps) => {
   const { t } = useTranslation();
-  const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
+  const [selectedProjects, setSelectedProjects] = useState<string[]>(
+    defaultSelectedProjectId ? [defaultSelectedProjectId] : [],
+  );
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
