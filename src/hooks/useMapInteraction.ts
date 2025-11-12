@@ -165,7 +165,7 @@ export const useMapInteraction = (
       console.error("Failed to initialize map:", error);
       toast.error(t("map.mapConfigError"));
     }
-  }, [mapboxToken, t, handleMapClick, selectedCoords]);
+  }, [mapboxToken, t, handleMapClick]); // Removed selectedCoords to prevent re-render on coordinate selection
 
   // Update marker when selectedCoords changes (without recreating map)
   useEffect(() => {
