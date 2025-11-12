@@ -126,7 +126,10 @@ export const useMapAlerts = (
           const MarkerClass = mapboxgl.accessToken
             ? mapboxgl.Marker
             : maplibregl.Marker;
-          const marker = new MarkerClass(el)
+          const marker = new MarkerClass({
+            element: el,
+            anchor: "center",
+          })
             .setLngLat([lng, lat])
             .addTo(mapInstance as any);
 
