@@ -32,10 +32,6 @@ interface MapInterfaceProps {
   isLoadingProjects?: boolean;
 }
 
-// Default Mapbox token
-const DEFAULT_MAPBOX_TOKEN =
-  "pk.eyJ1IjoibHVhbmRybyIsImEiOiJjanY2djRpdnkwOWdqM3lwZzVuaGIxa3VsIn0.jamcK2t2I1j3TXkUQFIsjQ";
-
 interface Project {
   projectId: string;
   name: string;
@@ -60,14 +56,15 @@ export const MapInterface = ({
 
   const { isInstallable, installApp } = usePWAInstall();
 
-  // Check for environment variable or use default token
+  // Check for environment variable
   useEffect(() => {
     const envToken = import.meta.env.VITE_MAPBOX_TOKEN;
     if (envToken && envToken.trim()) {
       setMapboxToken(envToken);
       setShowTokenInput(false);
     } else {
-      setMapboxToken(DEFAULT_MAPBOX_TOKEN);
+      // No token provided - will use OSM fallback
+      setMapboxToken("");
       setShowTokenInput(false);
     }
   }, []);

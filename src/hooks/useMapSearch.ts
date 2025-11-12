@@ -46,7 +46,9 @@ export const useMapSearch = (
 
     const accessToken = mapboxgl.accessToken;
     if (!accessToken) {
-      toast.error("Mapbox access token is not configured");
+      toast.error(
+        "Search requires a Mapbox token. Please add VITE_MAPBOX_TOKEN to your .env file.",
+      );
       return;
     }
 

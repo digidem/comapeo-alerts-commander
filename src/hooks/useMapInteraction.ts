@@ -71,15 +71,50 @@ export const useMapInteraction = (
 
   // Initialize map only once
   useEffect(() => {
-    if (!mapRef.current || !mapboxToken || initializedRef.current) return;
+    if (!mapRef.current || initializedRef.current) return;
 
     try {
-      // Initialize Mapbox
-      mapboxgl.accessToken = mapboxToken;
+      let mapStyle;
+
+      if (mapboxToken && mapboxToken.trim()) {
+        // Initialize with Mapbox token and style
+        mapboxgl.accessToken = mapboxToken;
+        mapStyle = "mapbox://styles/mapbox/satellite-streets-v12";
+      } else {
+        // Use OpenStreetMap as fallback when no token is provided
+        mapStyle = {
+          version: 8,
+          sources: {
+            "osm-tiles": {
+              type: "raster",
+              tiles: [
+                "https://a.tile.openstreetmap.org/{z}/{x}/{y}.png",
+                "https://b.tile.openstreetmap.org/{z}/{x}/{y}.png",
+                "https://c.tile.openstreetmap.org/{z}/{x}/{y}.png",
+              ],
+              tileSize: 256,
+              attribution:
+                '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            },
+          },
+          layers: [
+            {
+              id: "osm-tiles",
+              type: "raster",
+              source: "osm-tiles",
+              minzoom: 0,
+              maxzoom: 19,
+            },
+          ],
+        };
+        console.log(
+          "No Mapbox token provided, using OpenStreetMap tiles as fallback",
+        );
+      }
 
       const map = new mapboxgl.Map({
         container: mapRef.current,
-        style: "mapbox://styles/mapbox/satellite-streets-v12",
+        style: mapStyle,
         center: selectedCoords
           ? [selectedCoords.lng, selectedCoords.lat]
           : [0, 0],
@@ -95,7 +130,7 @@ export const useMapInteraction = (
       });
 
       map.on("error", (e) => {
-        console.error("Mapbox error:", e);
+        console.error("Map error:", e);
         toast.error(t("map.mapConfigError"));
       });
 
