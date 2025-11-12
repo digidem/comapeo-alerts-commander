@@ -36,32 +36,6 @@ export const useMapInteraction = (
         navigator.vibrate(50);
       }
 
-      // Update marker with bounce animation
-      if (markerRef.current) {
-        markerRef.current.remove();
-      }
-
-      const map = mapInstanceRef.current;
-      if (!map) return;
-
-      // Use the appropriate Marker class based on which library we're using
-      const MarkerClass = mapboxToken ? mapboxgl.Marker : maplibregl.Marker;
-      markerRef.current = new MarkerClass({
-        color: "#ef4444",
-        scale: 1.2,
-      })
-        .setLngLat([coords.lng, coords.lat])
-        .addTo(map as any);
-
-      // Animate marker
-      setTimeout(() => {
-        if (markerRef.current) {
-          markerRef.current.getElement().style.transform = "scale(1)";
-          markerRef.current.getElement().style.transition =
-            "transform 0.3s ease-out";
-        }
-      }, 100);
-
       toast.success(
         t("map.locationSelected", {
           lat: coords.lat.toString(),
@@ -69,7 +43,7 @@ export const useMapInteraction = (
         }),
       );
     },
-    [onCoordinatesChange, t, mapboxToken],
+    [onCoordinatesChange, t],
   );
 
   // Initialize map only once
