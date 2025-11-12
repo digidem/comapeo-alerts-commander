@@ -109,6 +109,11 @@ const Index = () => {
   };
 
   const handleAlertSuccess = () => {
+    // Select the first project that had an alert created
+    if (selectedProjects.length > 0) {
+      localStorage.setItem("selectedProjectId", selectedProjects[0]);
+    }
+
     setCurrentStep("map");
     setCoordinates(null);
     setSelectedProjects([]);
