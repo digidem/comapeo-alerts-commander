@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import mapboxgl from "mapbox-gl";
+import maplibregl from "maplibre-gl";
 
 interface Coordinates {
   lat: number;
@@ -9,8 +10,10 @@ interface Coordinates {
 }
 
 export const useMapSearch = (
-  mapInstance: mapboxgl.Map | null,
-  markerRef: React.MutableRefObject<mapboxgl.Marker | null>,
+  mapInstance: mapboxgl.Map | maplibregl.Map | null,
+  markerRef: React.MutableRefObject<
+    mapboxgl.Marker | maplibregl.Marker | null
+  >,
   onCoordinatesChange: (coords: Coordinates) => void,
   options: { autoZoom?: boolean } = { autoZoom: false },
 ) => {
@@ -93,11 +96,15 @@ export const useMapSearch = (
             markerRef.current.remove();
           }
 
-          markerRef.current = new mapboxgl.Marker({
+          // Use the appropriate Marker class - check if using Mapbox or MapLibre
+          const MarkerClass = mapboxgl.accessToken
+            ? mapboxgl.Marker
+            : maplibregl.Marker;
+          markerRef.current = new MarkerClass({
             color: "#ef4444",
           })
             .setLngLat([lng, lat])
-            .addTo(mapInstance);
+            .addTo(mapInstance as any);
         }
 
         toast.success(

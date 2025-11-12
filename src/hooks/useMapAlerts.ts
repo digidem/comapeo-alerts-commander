@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { toast } from "sonner";
 import { apiService } from "@/services/apiService";
 import mapboxgl from "mapbox-gl";
+import maplibregl from "maplibre-gl";
 
 export interface MapAlert {
   id: string;
@@ -16,13 +17,17 @@ export interface MapAlert {
 export const useMapAlerts = (
   credentials: any,
   selectedProject: any | null,
-  mapInstanceRef: React.MutableRefObject<mapboxgl.Map | null>,
+  mapInstanceRef: React.MutableRefObject<
+    mapboxgl.Map | maplibregl.Map | null
+  >,
   options: { autoFitBounds?: boolean } = { autoFitBounds: false },
 ) => {
   const [alerts, setAlerts] = useState<MapAlert[]>([]);
   const [selectedAlert, setSelectedAlert] = useState<MapAlert | null>(null);
   const [isLoadingAlerts, setIsLoadingAlerts] = useState(false);
-  const alertMarkersRef = useRef<mapboxgl.Marker[]>([]);
+  const alertMarkersRef = useRef<
+    (mapboxgl.Marker | maplibregl.Marker)[]
+  >([]);
 
   const addAlertMarkers = useCallback(
     (alertList: MapAlert[]) => {
@@ -117,9 +122,13 @@ export const useMapAlerts = (
         });
 
         try {
-          const marker = new mapboxgl.Marker(el)
+          // Use the appropriate Marker class - check if using Mapbox or MapLibre
+          const MarkerClass = mapboxgl.accessToken
+            ? mapboxgl.Marker
+            : maplibregl.Marker;
+          const marker = new MarkerClass(el)
             .setLngLat([lng, lat])
-            .addTo(mapInstance);
+            .addTo(mapInstance as any);
 
           alertMarkersRef.current.push(marker);
         } catch (error) {
@@ -133,14 +142,18 @@ export const useMapAlerts = (
       // Fit map to show all markers if there are any and autoFitBounds is enabled
       if (options.autoFitBounds && alertMarkersRef.current.length > 0) {
         const coordinates = alertList.map((alert) => alert.coordinates);
+        // Use the appropriate LngLatBounds class
+        const LngLatBoundsClass = mapboxgl.accessToken
+          ? mapboxgl.LngLatBounds
+          : maplibregl.LngLatBounds;
         const bounds = coordinates.reduce(
           (bounds, coord) => {
             return bounds.extend(coord);
           },
-          new mapboxgl.LngLatBounds(coordinates[0], coordinates[0]),
+          new LngLatBoundsClass(coordinates[0], coordinates[0]),
         );
 
-        mapInstance.fitBounds(bounds, {
+        mapInstance.fitBounds(bounds as any, {
           padding: 50,
           maxZoom: 15,
         });

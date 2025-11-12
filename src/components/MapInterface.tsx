@@ -16,7 +16,9 @@ import { useMapSearch } from "@/hooks/useMapSearch";
 import { useMapInteraction } from "@/hooks/useMapInteraction";
 import { useTranslation } from "react-i18next";
 import mapboxgl from "mapbox-gl";
+import maplibregl from "maplibre-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
+import "maplibre-gl/dist/maplibre-gl.css";
 
 interface Coordinates {
   lat: number;
@@ -150,25 +152,30 @@ export const MapInterface = ({
     setShowTokenInput(false);
   };
 
-  const handleManualCoords = useCallback((coords: Coordinates) => {
-    setSelectedCoords(coords);
+  const handleManualCoords = useCallback(
+    (coords: Coordinates) => {
+      setSelectedCoords(coords);
 
-    // Update map center and marker without changing zoom
-    if (mapInstanceRef.current) {
-      // Just center the map without changing zoom to prevent jarring experience
-      mapInstanceRef.current.setCenter([coords.lng, coords.lat]);
+      // Update map center and marker without changing zoom
+      if (mapInstanceRef.current) {
+        // Just center the map without changing zoom to prevent jarring experience
+        mapInstanceRef.current.setCenter([coords.lng, coords.lat]);
 
-      if (markerRef.current) {
-        markerRef.current.remove();
+        if (markerRef.current) {
+          markerRef.current.remove();
+        }
+
+        // Use the appropriate Marker class based on which library we're using
+        const MarkerClass = mapboxToken ? mapboxgl.Marker : maplibregl.Marker;
+        markerRef.current = new MarkerClass({
+          color: "#ef4444",
+        })
+          .setLngLat([coords.lng, coords.lat])
+          .addTo(mapInstanceRef.current as any);
       }
-
-      markerRef.current = new mapboxgl.Marker({
-        color: "#ef4444",
-      })
-        .setLngLat([coords.lng, coords.lat])
-        .addTo(mapInstanceRef.current);
-    }
-  }, []);
+    },
+    [mapboxToken],
+  );
 
   const handleRecentSearchClick = useCallback(
     (search: string) => {

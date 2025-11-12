@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import mapboxgl from "mapbox-gl";
+import maplibregl from "maplibre-gl";
 
 interface Coordinates {
   lat: number;
@@ -16,13 +17,13 @@ export const useMapInteraction = (
   const { t } = useTranslation();
   const [isMapLoaded, setIsMapLoaded] = useState(false);
   const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstanceRef = useRef<mapboxgl.Map | null>(null);
-  const markerRef = useRef<mapboxgl.Marker | null>(null);
+  const mapInstanceRef = useRef<mapboxgl.Map | maplibregl.Map | null>(null);
+  const markerRef = useRef<mapboxgl.Marker | maplibregl.Marker | null>(null);
   const initializedRef = useRef(false);
 
   // Memoize the click handler to prevent recreation
   const handleMapClick = useCallback(
-    (e: mapboxgl.MapMouseEvent) => {
+    (e: mapboxgl.MapMouseEvent | maplibregl.MapMouseEvent) => {
       const coords = {
         lat: parseFloat(e.lngLat.lat.toFixed(6)),
         lng: parseFloat(e.lngLat.lng.toFixed(6)),
@@ -43,12 +44,14 @@ export const useMapInteraction = (
       const map = mapInstanceRef.current;
       if (!map) return;
 
-      markerRef.current = new mapboxgl.Marker({
+      // Use the appropriate Marker class based on which library we're using
+      const MarkerClass = mapboxToken ? mapboxgl.Marker : maplibregl.Marker;
+      markerRef.current = new MarkerClass({
         color: "#ef4444",
         scale: 1.2,
       })
         .setLngLat([coords.lng, coords.lat])
-        .addTo(map);
+        .addTo(map as any);
 
       // Animate marker
       setTimeout(() => {
@@ -66,7 +69,7 @@ export const useMapInteraction = (
         }),
       );
     },
-    [onCoordinatesChange, t],
+    [onCoordinatesChange, t, mapboxToken],
   );
 
   // Initialize map only once
@@ -74,19 +77,35 @@ export const useMapInteraction = (
     if (!mapRef.current || initializedRef.current) return;
 
     try {
-      let mapStyle;
+      let map: mapboxgl.Map | maplibregl.Map;
 
       if (mapboxToken && mapboxToken.trim()) {
-        // Initialize with Mapbox token and style
+        // Use Mapbox GL with token for premium features
         mapboxgl.accessToken = mapboxToken;
-        mapStyle = "mapbox://styles/mapbox/satellite-streets-v12";
+        map = new mapboxgl.Map({
+          container: mapRef.current,
+          style: "mapbox://styles/mapbox/satellite-streets-v12",
+          center: selectedCoords
+            ? [selectedCoords.lng, selectedCoords.lat]
+            : [0, 0],
+          zoom: selectedCoords ? 10 : 2,
+          touchZoomRotate: true,
+          touchPitch: true,
+        });
+        map.addControl(new mapboxgl.NavigationControl(), "bottom-right");
       } else {
-        // Use OpenStreetMap as fallback when no token is provided
-        mapStyle = {
-          version: 8,
+        // Use MapLibre GL with OpenStreetMap when no token is provided
+        if (import.meta.env.DEV) {
+          console.log(
+            "No Mapbox token provided, using OpenStreetMap tiles with MapLibre GL",
+          );
+        }
+
+        const osmStyle = {
+          version: 8 as const,
           sources: {
             "osm-tiles": {
-              type: "raster",
+              type: "raster" as const,
               tiles: [
                 "https://a.tile.openstreetmap.org/{z}/{x}/{y}.png",
                 "https://b.tile.openstreetmap.org/{z}/{x}/{y}.png",
@@ -100,30 +119,26 @@ export const useMapInteraction = (
           layers: [
             {
               id: "osm-tiles",
-              type: "raster",
+              type: "raster" as const,
               source: "osm-tiles",
               minzoom: 0,
               maxzoom: 19,
             },
           ],
         };
-        console.log(
-          "No Mapbox token provided, using OpenStreetMap tiles as fallback",
-        );
+
+        map = new maplibregl.Map({
+          container: mapRef.current,
+          style: osmStyle,
+          center: selectedCoords
+            ? [selectedCoords.lng, selectedCoords.lat]
+            : [0, 0],
+          zoom: selectedCoords ? 10 : 2,
+          touchZoomRotate: true,
+          touchPitch: true,
+        });
+        map.addControl(new maplibregl.NavigationControl(), "bottom-right");
       }
-
-      const map = new mapboxgl.Map({
-        container: mapRef.current,
-        style: mapStyle,
-        center: selectedCoords
-          ? [selectedCoords.lng, selectedCoords.lat]
-          : [0, 0],
-        zoom: selectedCoords ? 10 : 2,
-        touchZoomRotate: true,
-        touchPitch: true,
-      });
-
-      map.addControl(new mapboxgl.NavigationControl(), "bottom-right");
 
       map.on("load", () => {
         setIsMapLoaded(true);
@@ -134,7 +149,7 @@ export const useMapInteraction = (
         toast.error(t("map.mapConfigError"));
       });
 
-      map.on("click", handleMapClick);
+      map.on("click", handleMapClick as any);
 
       mapInstanceRef.current = map;
       initializedRef.current = true;
@@ -150,7 +165,7 @@ export const useMapInteraction = (
       console.error("Failed to initialize map:", error);
       toast.error(t("map.mapConfigError"));
     }
-  }, [mapboxToken, t, handleMapClick]); // Remove selectedCoords from dependencies
+  }, [mapboxToken, t, handleMapClick, selectedCoords]);
 
   // Update marker when selectedCoords changes (without recreating map)
   useEffect(() => {
@@ -163,12 +178,13 @@ export const useMapInteraction = (
         markerRef.current.remove();
       }
 
-      // Add new marker
-      markerRef.current = new mapboxgl.Marker({
+      // Add new marker using the appropriate library
+      const MarkerClass = mapboxToken ? mapboxgl.Marker : maplibregl.Marker;
+      markerRef.current = new MarkerClass({
         color: "#ef4444",
       })
         .setLngLat([selectedCoords.lng, selectedCoords.lat])
-        .addTo(map);
+        .addTo(map as any);
     } else {
       // Remove marker if no coordinates
       if (markerRef.current) {
@@ -176,7 +192,7 @@ export const useMapInteraction = (
         markerRef.current = null;
       }
     }
-  }, [selectedCoords, isMapLoaded]);
+  }, [selectedCoords, isMapLoaded, mapboxToken]);
 
   return {
     mapRef,
