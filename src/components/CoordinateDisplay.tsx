@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { MapPin } from "lucide-react";
+import { MapPin, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 interface Coordinates {
@@ -10,11 +10,13 @@ interface Coordinates {
 interface CoordinateDisplayProps {
   coordinates: Coordinates;
   onContinue: () => void;
+  onCancel: () => void;
 }
 
 export const CoordinateDisplay = ({
   coordinates,
   onContinue,
+  onCancel,
 }: CoordinateDisplayProps) => {
   const { t } = useTranslation();
 
@@ -41,13 +43,23 @@ export const CoordinateDisplay = ({
               <span>Lng: {coordinates.lng}</span>
             </p>
           </div>
-          <Button
-            onClick={onContinue}
-            className="bg-green-600 hover:bg-green-700 h-12 px-6 font-medium min-w-[100px]"
-            aria-label="Continue to project selection"
-          >
-            {t("map.continue")}
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              onClick={onCancel}
+              variant="outline"
+              className="h-12 px-4 min-w-[44px]"
+              aria-label="Cancel"
+            >
+              <X className="w-4 h-4" />
+            </Button>
+            <Button
+              onClick={onContinue}
+              className="bg-green-600 hover:bg-green-700 h-12 px-6 font-medium min-w-[100px]"
+              aria-label="Continue to project selection"
+            >
+              {t("map.continue")}
+            </Button>
+          </div>
         </div>
       </div>
     </div>

@@ -199,6 +199,21 @@ export const MapInterface = ({
     onCoordinatesSet(selectedCoords);
   }, [selectedCoords, t, onCoordinatesSet]);
 
+  const handleCancelCoordinates = useCallback(() => {
+    setSelectedCoords(null);
+
+    // Remove marker from map
+    if (markerRef.current) {
+      markerRef.current.remove();
+      markerRef.current = null;
+    }
+
+    // Haptic feedback
+    if ("vibrate" in navigator) {
+      navigator.vibrate(50);
+    }
+  }, [markerRef]);
+
   if (showTokenInput) {
     return (
       <MapTokenSetup
@@ -306,6 +321,7 @@ export const MapInterface = ({
         <CoordinateDisplay
           coordinates={selectedCoords}
           onContinue={handleContinue}
+          onCancel={handleCancelCoordinates}
         />
       )}
 
