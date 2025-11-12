@@ -55,24 +55,15 @@ export const MapInterface = ({
     coordinates,
   );
   const [showManualEntry, setShowManualEntry] = useState(false);
-  const [mapboxToken, setMapboxToken] = useState("");
+  // Initialize mapboxToken directly from environment to avoid async timing issues
+  const [mapboxToken] = useState(() => {
+    const envToken = import.meta.env.VITE_MAPBOX_TOKEN;
+    return envToken && envToken.trim() ? envToken : "";
+  });
   const [showTokenInput, setShowTokenInput] = useState(false);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
 
   const { isInstallable, installApp } = usePWAInstall();
-
-  // Check for environment variable
-  useEffect(() => {
-    const envToken = import.meta.env.VITE_MAPBOX_TOKEN;
-    if (envToken && envToken.trim()) {
-      setMapboxToken(envToken);
-      setShowTokenInput(false);
-    } else {
-      // No token provided - will use OSM fallback
-      setMapboxToken("");
-      setShowTokenInput(false);
-    }
-  }, []);
 
   useEffect(() => {
     if (coordinates) {
