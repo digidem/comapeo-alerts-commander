@@ -90,7 +90,6 @@ export const useMapAlerts = (
         justify-content: center;
         box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         position: relative;
-        z-index: 1000;
       `;
 
         // Add label
@@ -108,7 +107,6 @@ export const useMapAlerts = (
         font-size: 12px;
         white-space: nowrap;
         pointer-events: none;
-        z-index: 1001;
       `;
         el.appendChild(label);
 
