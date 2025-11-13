@@ -110,7 +110,10 @@ export const useMapAlerts = (
       `;
         el.appendChild(label);
 
-        el.addEventListener("click", () => {
+        el.addEventListener("click", (e) => {
+          // Stop event propagation to prevent triggering map click handler
+          e.stopPropagation();
+
           setSelectedAlert(alert);
 
           // Haptic feedback
