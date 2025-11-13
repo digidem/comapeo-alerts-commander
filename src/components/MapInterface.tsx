@@ -160,7 +160,9 @@ export const MapInterface = ({
         }
 
         // Use the appropriate Marker class based on which library we're using
-        const MarkerClass = mapboxToken ? mapboxgl.Marker : maplibregl.Marker;
+        const MarkerClass = mapboxgl.accessToken
+          ? mapboxgl.Marker
+          : maplibregl.Marker;
         markerRef.current = new MarkerClass({
           color: "#ef4444",
         })
@@ -168,7 +170,7 @@ export const MapInterface = ({
           .addTo(mapInstanceRef.current as any);
       }
     },
-    [mapboxToken],
+    [],
   );
 
   const handleRecentSearchClick = useCallback(

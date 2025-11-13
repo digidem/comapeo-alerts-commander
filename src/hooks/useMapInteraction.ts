@@ -153,7 +153,9 @@ export const useMapInteraction = (
       }
 
       // Add new marker using the appropriate library
-      const MarkerClass = mapboxToken ? mapboxgl.Marker : maplibregl.Marker;
+      const MarkerClass = mapboxgl.accessToken
+        ? mapboxgl.Marker
+        : maplibregl.Marker;
       markerRef.current = new MarkerClass({
         color: "#ef4444",
       })
@@ -166,7 +168,7 @@ export const useMapInteraction = (
         markerRef.current = null;
       }
     }
-  }, [selectedCoords, isMapLoaded, mapboxToken]);
+  }, [selectedCoords, isMapLoaded]);
 
   return {
     mapRef,

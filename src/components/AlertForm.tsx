@@ -47,9 +47,17 @@ const getDefaultStartTime = () => {
 
 const getDefaultEndTime = () => {
   const now = new Date();
-  // Add 1 month
+  // Add 1 month safely handling month-end edge cases
   const oneMonthLater = new Date(now);
+  const currentDay = now.getDate();
+
   oneMonthLater.setMonth(oneMonthLater.getMonth() + 1);
+
+  // Handle edge case: if day changed due to month overflow (e.g., Jan 31 -> Mar 3)
+  // Set to last day of previous month instead
+  if (oneMonthLater.getDate() < currentDay) {
+    oneMonthLater.setDate(0); // Sets to last day of previous month
+  }
 
   // Format as YYYY-MM-DDTHH:mm for datetime-local input
   const year = oneMonthLater.getFullYear();
