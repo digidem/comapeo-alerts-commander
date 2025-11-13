@@ -43,7 +43,7 @@ export const useMapInteraction = (
         }),
       );
     },
-    [onCoordinatesChange, t],
+    [onCoordinatesChange], // Removed 't' to prevent map re-render on language change
   );
 
   // Initialize map only once
@@ -139,7 +139,7 @@ export const useMapInteraction = (
       console.error("Failed to initialize map:", error);
       toast.error(t("map.mapConfigError"));
     }
-  }, [mapboxToken, t, handleMapClick]); // Removed selectedCoords to prevent re-render on coordinate selection
+  }, [mapboxToken, handleMapClick]); // Removed 't' to prevent map re-render on language change
 
   // Update marker when selectedCoords changes (without recreating map)
   useEffect(() => {

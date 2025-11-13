@@ -193,7 +193,7 @@ export const MapInterface = ({
     }
 
     onCoordinatesSet(selectedCoords, selectedProject?.projectId);
-  }, [selectedCoords, selectedProject, t, onCoordinatesSet]);
+  }, [selectedCoords, selectedProject, onCoordinatesSet]); // Removed 't' to prevent re-render on language change
 
   const handleCancelCoordinates = useCallback(() => {
     setSelectedCoords(null);
