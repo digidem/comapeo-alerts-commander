@@ -66,12 +66,12 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy dist --project-name=geo-alert-commander --branch=pr-${{ github.event.pull_request.number }}
+          command: pages deploy dist --project-name=comapeo-alerts-commander --branch=pr-${{ github.event.pull_request.number }}
 
       - name: Generate deployment details
         id: deployment-info
         run: |
-          PREVIEW_URL="https://pr-${{ github.event.pull_request.number }}.geo-alert-commander.pages.dev"
+          PREVIEW_URL="https://pr-${{ github.event.pull_request.number }}.comapeo-alerts-commander.pages.dev"
           echo "preview-url=$PREVIEW_URL" >> $GITHUB_OUTPUT
 
           # Extract deployment URL from Cloudflare output if available

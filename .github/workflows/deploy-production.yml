@@ -52,7 +52,7 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy dist --project-name=geo-alert-commander --branch=${{ github.ref_name }}
+          command: pages deploy dist --project-name=comapeo-alerts-commander --branch=${{ github.ref_name }}
 
       - name: Generate deployment summary
         run: |
