@@ -301,6 +301,43 @@ Typical production bundle breakdown:
 3. **Install as PWA** - Native-like performance on mobile devices
 4. **Clear old caches** - Service worker auto-updates with new versions
 
+## Deployment
+
+This project uses GitHub Actions to automatically deploy to Cloudflare Pages.
+
+### Automatic Deployments
+
+**Production Deployment:**
+- Triggered automatically on every push to `main` branch
+- Deploys to your production Cloudflare Pages URL
+- Updates happen within minutes of merging
+
+**PR Preview Deployments:**
+- Automatically created for every pull request
+- Each PR gets a unique preview URL: `https://pr-{number}.geo-alert-commander.pages.dev`
+- Preview updates automatically when you push new commits
+- Comments on PR with deployment status and preview URL
+- Forks cannot trigger deployments (security measure)
+
+### Quick Setup
+
+1. **Create a Cloudflare Pages project** named `geo-alert-commander`
+2. **Get your Cloudflare credentials:**
+   - Account ID (found in Cloudflare Dashboard)
+   - API Token with `Cloudflare Pages:Edit` permission
+3. **Add GitHub Secrets:**
+   - `CLOUDFLARE_API_TOKEN`
+   - `CLOUDFLARE_ACCOUNT_ID`
+4. **Configure environment variables in Cloudflare** (optional):
+   - Add `VITE_MAPBOX_TOKEN` for production builds
+
+For detailed setup instructions, troubleshooting, and custom domain configuration, see [DEPLOYMENT.md](./DEPLOYMENT.md).
+
+### Workflow Files
+
+- `.github/workflows/deploy-production.yml` - Production deployment on main branch
+- `.github/workflows/deploy-pr-preview.yml` - PR preview deployments
+
 ## Troubleshooting
 
 ### Map not loading?
