@@ -1,13 +1,13 @@
 # Deployment Guide
 
-This guide provides step-by-step instructions for deploying Geo Alert Commander to Cloudflare Pages using GitHub Actions.
+This guide provides step-by-step instructions for deploying CoMapeo Alerts Commander to Cloudflare Pages using GitHub Actions.
 
 ## Overview
 
 The project uses automated GitHub Actions workflows for deployment:
 
 1. **Production Deployment** - Deploys to production on every push to `main`
-2. **PR Preview Deployment** - Creates preview deployments for pull requests at `https://pr-{number}.geo-alert-commander.pages.dev`
+2. **PR Preview Deployment** - Creates preview deployments for pull requests at `https://pr-{number}.comapeo-alerts-commander.pages.dev`
 
 ## Initial Setup
 
@@ -16,7 +16,7 @@ The project uses automated GitHub Actions workflows for deployment:
 1. Log in to [Cloudflare Dashboard](https://dash.cloudflare.com/)
 2. Navigate to **Workers & Pages**
 3. Click **Create application** > **Pages**
-4. Name your project: `geo-alert-commander`
+4. Name your project: `comapeo-alerts-commander`
 
 **Note:** You don't need to connect GitHub in Cloudflare - our GitHub Actions handle deployments via API.
 
@@ -78,7 +78,7 @@ To use Mapbox in production:
 4. Deploys `dist/` to Cloudflare Pages
 5. Generates deployment summary
 
-**Deployment URL:** `https://geo-alert-commander.pages.dev`
+**Deployment URL:** `https://comapeo-alerts-commander.pages.dev`
 
 ### PR Preview Deployment
 
@@ -94,9 +94,9 @@ To use Mapbox in production:
 4. Posts/updates comment on PR with preview URL
 5. Cancels previous deployments for the same PR
 
-**Preview URL:** `https://pr-{number}.geo-alert-commander.pages.dev`
+**Preview URL:** `https://pr-{number}.comapeo-alerts-commander.pages.dev`
 
-**Example:** PR #42 → `https://pr-42.geo-alert-commander.pages.dev`
+**Example:** PR #42 → `https://pr-42.comapeo-alerts-commander.pages.dev`
 
 ## Manual Deployment
 
@@ -121,10 +121,10 @@ wrangler login
 npm run build
 
 # Deploy to Cloudflare Pages
-wrangler pages deploy dist --project-name=geo-alert-commander
+wrangler pages deploy dist --project-name=comapeo-alerts-commander
 
 # Deploy to specific branch (for preview)
-wrangler pages deploy dist --project-name=geo-alert-commander --branch=my-feature
+wrangler pages deploy dist --project-name=comapeo-alerts-commander --branch=my-feature
 ```
 
 ## Custom Domain Setup
@@ -179,7 +179,7 @@ wrangler pages deploy dist --project-name=geo-alert-commander --branch=my-featur
 
 **GitHub Actions workflow failing:**
 - Verify secrets are set correctly in repository settings
-- Check Cloudflare Pages project name matches (`geo-alert-commander`)
+- Check Cloudflare Pages project name matches (`comapeo-alerts-commander`)
 - Ensure API token has correct permissions
 - Review workflow logs for specific errors
 

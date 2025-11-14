@@ -82,7 +82,7 @@ export const useMapSearch = (
           `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&limit=1`,
           {
             headers: {
-              "User-Agent": "GeoAlertCommander/1.0",
+              "User-Agent": "CoMapeoAlertsCommander/1.0",
             },
           },
         );
