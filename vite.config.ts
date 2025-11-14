@@ -38,4 +38,25 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Split large map libraries into separate chunks
+          'mapbox': ['mapbox-gl'],
+          'maplibre': ['maplibre-gl'],
+          // Split React and related libs
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          // Split UI components
+          'ui-vendor': [
+            '@radix-ui/react-dialog',
+            '@radix-ui/react-dropdown-menu',
+            '@radix-ui/react-select',
+            '@radix-ui/react-toast',
+          ],
+        },
+      },
+    },
+    chunkSizeWarningLimit: 1000, // Increase limit for map libraries
+  },
 });

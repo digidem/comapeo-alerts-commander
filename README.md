@@ -1,28 +1,73 @@
 # Geo Alert Commander
 
-A web application for creating and managing geographic alerts with map integration. Built for the CoMapeo ecosystem.
+A Progressive Web App for creating and managing geographic alerts with interactive map integration. Built for the CoMapeo ecosystem, this application provides a mobile-first interface for field work and remote monitoring.
+
+![PWA](https://img.shields.io/badge/PWA-enabled-blue)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.5-blue)
+![React](https://img.shields.io/badge/React-18-blue)
+![Vite](https://img.shields.io/badge/Vite-5-purple)
 
 ## Features
 
-- **Interactive Map Interface**: View and interact with geographic data using Mapbox GL (with token) or OpenStreetMap tiles (fallback)
-- **Alert Management**: Create, view, and manage geographic alerts for different projects
-- **Multi-Project Support**: Work with multiple projects and switch between them seamlessly
-- **Coordinate Selection**: Click on map, search locations, or manually enter coordinates
-- **Authentication**: Secure login with bearer token authentication
-- **Internationalization**: Support for multiple languages (English, Portuguese, Spanish, French)
-- **PWA Support**: Install as a Progressive Web App for offline capabilities
-- **Mobile-First Design**: Responsive UI optimized for mobile and desktop use
+### Map & Location
+- **Dual Map Support**: Automatically uses Mapbox GL (premium features) when token is provided, or falls back to OpenStreetMap (free, no token required)
+- **Flexible Coordinate Input**:
+  - Click directly on the map
+  - Search locations by name (Mapbox Geocoding or Nominatim fallback)
+  - Manual coordinate entry
+- **Smart Map Behavior**:
+  - Auto-fit bounds to show all alerts on load
+  - Smooth zoom animations when selecting locations
+  - Persistent view on language changes
+- **Visual Alert Markers**: Red circular markers with labels, properly layered below UI elements
+
+### Alert Management
+- **Multi-Project Alerts**: Create and manage alerts across multiple CoMapeo projects simultaneously
+- **Smart Defaults**: Auto-populated detection times (current time to +1 month)
+- **Alert Visualization**: View all alerts for selected project on the map
+- **Click-to-View Details**: Tap any alert marker to see full information
+
+### Progressive Web App
+- **Installable**: Add to home screen on mobile and desktop
+- **Offline Support**: Service worker caching for offline functionality
+- **App Shortcuts**: Quick access to "Create Alert" action
+- **Customizable Icons**: Simple red circle default, easy to replace with your logo
+- **Platform Optimized**: Works seamlessly on iOS, Android, and desktop
+
+### User Experience
+- **Internationalization**: Full support for English, Portuguese, Spanish, and French
+- **Mobile-First Design**: Touch-optimized interface with haptic feedback
+- **Responsive UI**: Adapts beautifully to any screen size
+- **Secure Authentication**: Bearer token authentication with optional credential persistence
+- **Dark Mode Ready**: Theme color support for system preferences
 
 ## Tech Stack
 
-- **Frontend Framework**: React 18 with TypeScript
-- **Build Tool**: Vite
-- **UI Components**: Radix UI + shadcn/ui
-- **Styling**: Tailwind CSS
-- **Maps**: Mapbox GL JS / MapLibre GL JS
-- **State Management**: React hooks and context
-- **Internationalization**: i18next
-- **API Client**: Axios
+### Core
+- **React 18** - Modern frontend framework with TypeScript
+- **Vite 5** - Lightning-fast build tool with HMR
+- **TypeScript 5.5** - Type-safe development
+
+### UI & Styling
+- **Tailwind CSS** - Utility-first styling
+- **shadcn/ui** - High-quality component library built on Radix UI
+- **Radix UI** - Accessible, unstyled component primitives
+- **Lucide Icons** - Beautiful, consistent iconography
+
+### Maps & Geolocation
+- **Mapbox GL JS** - Premium map features (satellite imagery, vector tiles)
+- **MapLibre GL JS** - Open-source map rendering (OSM fallback)
+- **Nominatim API** - Free geocoding service for location search
+
+### Internationalization
+- **i18next** - Translation framework
+- **react-i18next** - React integration with SSR support
+- **Auto-translation** - AI-powered translation pipeline for new languages
+
+### Development
+- **ESLint** - Code linting and quality
+- **SWC** - Fast TypeScript/JSX compilation
+- **Sharp** - High-performance icon generation
 
 ## Getting Started
 
@@ -74,11 +119,41 @@ The built files will be in the `dist` directory.
 
 ### Environment Variables
 
-- `VITE_MAPBOX_TOKEN`: (Optional) Mapbox access token for premium map features and geocoding search. If not provided, the app uses OpenStreetMap tiles.
+Create a `.env` file in the project root to customize the application:
 
-### API Proxy
+```bash
+# Mapbox Configuration (Optional)
+# Get your free token at: https://account.mapbox.com/access-tokens/
+# If not provided, app uses OpenStreetMap tiles and Nominatim geocoding
+VITE_MAPBOX_TOKEN=your_mapbox_token_here
+```
 
-The development server includes a proxy configuration for the CoMapeo API to avoid CORS issues. By default, it proxies to `https://demo.comapeo.cloud`. You can modify this in `vite.config.ts`.
+**When to use Mapbox token:**
+- ✅ You want satellite imagery and high-quality vector tiles
+- ✅ You need premium geocoding with detailed results
+- ✅ You require accurate routing and directions (future feature)
+
+**Without Mapbox token:**
+- ✅ App works perfectly with OpenStreetMap tiles
+- ✅ Location search uses Nominatim (free OSM geocoding)
+- ✅ No costs, no sign-up required
+- ⚠️ Basic street map view only (no satellite)
+
+### API Proxy (Development)
+
+The development server includes a proxy configuration for the CoMapeo API to avoid CORS issues:
+
+```typescript
+// vite.config.ts
+proxy: {
+  '/api': {
+    target: 'https://demo.comapeo.cloud', // Change to your server
+    changeOrigin: true,
+  }
+}
+```
+
+For production, ensure your CoMapeo server has proper CORS headers configured.
 
 ## Usage
 
@@ -132,13 +207,34 @@ For detailed instructions, see [ICONS.md](./ICONS.md)
 ## Project Structure
 
 ```
-src/
-├── components/       # React components
-├── hooks/           # Custom React hooks
-├── i18n/            # Internationalization files
-├── pages/           # Page components
-├── services/        # API services
-└── lib/             # Utility functions
+geo-alert-commander/
+├── public/                  # Static assets
+│   ├── icon.svg            # Source icon (replace with your logo)
+│   ├── icon-*.png          # Generated PWA icons (auto-generated)
+│   ├── manifest.json       # PWA manifest
+│   └── sw.js               # Service worker
+├── src/
+│   ├── components/         # React components
+│   │   ├── AlertForm.tsx   # Alert creation form
+│   │   ├── MapInterface.tsx # Main map component
+│   │   ├── ProjectSelector.tsx
+│   │   └── ui/             # shadcn/ui components
+│   ├── hooks/              # Custom React hooks
+│   │   ├── useMapInteraction.ts  # Map click & interaction
+│   │   ├── useMapAlerts.ts       # Alert markers & display
+│   │   └── useMapSearch.ts       # Location search
+│   ├── i18n/               # Internationalization
+│   │   └── locales/        # Translation files (en, pt, es, fr)
+│   ├── pages/              # Page components
+│   │   └── Index.tsx       # Main app routing
+│   ├── services/           # API services
+│   │   └── apiService.ts   # CoMapeo API client
+│   └── lib/                # Utility functions
+├── scripts/
+│   └── generate-icons.js   # Icon generation script
+├── .env.example            # Environment variables template
+├── ICONS.md                # Icon customization guide
+└── vite.config.ts          # Vite configuration
 ```
 
 ## Development
@@ -159,6 +255,87 @@ Translations are managed in `src/i18n/locales/`. To add a new translation:
 
 1. Update `en.json` with new keys
 2. Run `npm run translate:all` to generate translations for other languages
+
+### Code Quality
+
+```bash
+# Run linter
+npm run lint
+
+# Build for production (checks for type errors)
+npm run build
+
+# Preview production build locally
+npm run preview
+```
+
+## Performance & Optimization
+
+### Build Optimization
+
+The project uses intelligent code splitting to optimize bundle size:
+
+- **Map Libraries**: Mapbox GL and MapLibre GL are split into separate chunks
+- **React Vendor**: React core libraries are bundled separately for better caching
+- **UI Vendor**: Radix UI components are chunked together
+- **Lazy Loading**: Map libraries load on-demand based on token availability
+
+### Bundle Analysis
+
+After building, check the bundle sizes:
+
+```bash
+npm run build
+# Look for generated chunks in dist/assets/
+```
+
+Typical production bundle breakdown:
+- Main app: ~150KB (gzipped)
+- Map libraries: ~700-800KB (gzipped, loaded separately)
+- UI vendor: ~100KB (gzipped)
+
+### Performance Tips
+
+1. **Use Mapbox token for better performance** - Mapbox tiles load faster than OSM
+2. **Enable service worker** - Caches assets for instant repeat loads
+3. **Install as PWA** - Native-like performance on mobile devices
+4. **Clear old caches** - Service worker auto-updates with new versions
+
+## Troubleshooting
+
+### Map not loading?
+
+**Check browser console for errors:**
+- If you see "Invalid Mapbox token" but want to use OSM, remove the token from `.env`
+- If map is blank, ensure you have internet connectivity (first load requires tiles)
+
+### Search not working?
+
+- **With Mapbox token**: Verify token has Geocoding API enabled
+- **Without token**: Nominatim has rate limits (1 request/second) - wait a moment between searches
+
+### Icons not updating after replacement?
+
+1. Clear browser cache (Ctrl+Shift+R or Cmd+Shift+R)
+2. Check `public/icon-*.png` files were regenerated
+3. Uninstall and reinstall PWA if already installed
+
+### Build warnings about chunk size?
+
+This is normal - Mapbox/MapLibre GL are large libraries (~700KB each). The app uses code splitting to load them separately, so it doesn't impact initial load time.
+
+### Service worker not registering?
+
+- Service workers require HTTPS (or localhost for development)
+- Check browser console for registration errors
+- Ensure `public/sw.js` exists and is accessible
+
+### Authentication failing?
+
+1. Verify server URL is correct (include https://)
+2. Check bearer token is valid and not expired
+3. Ensure server has proper CORS headers configured
+4. Try with demo server: `https://demo.comapeo.cloud`
 
 ## Contributing
 
