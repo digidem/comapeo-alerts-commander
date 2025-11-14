@@ -113,7 +113,7 @@ export const MapInterface = ({
     loadAlerts,
     cleanupMarkers,
   } = useMapAlerts(credentials, selectedProject, mapInstanceRef, {
-    autoFitBounds: false, // Prevent automatic zoom changes when alerts are loaded
+    autoFitBounds: true, // Automatically fit map bounds to show all alerts
   });
 
   const {
