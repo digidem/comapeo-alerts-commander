@@ -31,6 +31,16 @@ export const useMapInteraction = (
 
       onCoordinatesChange(coords);
 
+      // Zoom to selected location with smooth animation
+      const map = mapInstanceRef.current;
+      if (map) {
+        map.flyTo({
+          center: [coords.lng, coords.lat],
+          zoom: 14, // Zoom in to street level
+          duration: 1000, // 1 second animation
+        });
+      }
+
       // Haptic feedback on mobile
       if ("vibrate" in navigator) {
         navigator.vibrate(50);
