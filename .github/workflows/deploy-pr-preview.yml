@@ -1,0 +1,190 @@
+name: Deploy PR Preview
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+
+# Cancel in-progress runs for the same PR
+concurrency:
+  group: pr-preview-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  # Security check - prevent forks from accessing secrets
+  security-check:
+    name: Security Check
+    runs-on: ubuntu-latest
+    outputs:
+      is-fork: ${{ steps.fork-check.outputs.is-fork }}
+    steps:
+      - name: Check if PR is from fork
+        id: fork-check
+        run: |
+          if [ "${{ github.event.pull_request.head.repo.full_name }}" != "${{ github.repository }}" ]; then
+            echo "is-fork=true" >> $GITHUB_OUTPUT
+            echo "⚠️ PR is from a fork - deployment will be skipped for security" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "is-fork=false" >> $GITHUB_OUTPUT
+          fi
+
+  deploy-preview:
+    name: Deploy Preview to Cloudflare Pages
+    runs-on: ubuntu-latest
+    needs: security-check
+    if: needs.security-check.outputs.is-fork == 'false'
+    permissions:
+      contents: read
+      deployments: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout PR code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application
+        run: npm run build
+        env:
+          NODE_ENV: production
+
+      - name: Deploy to Cloudflare Pages
+        id: deploy
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy dist --project-name=geo-alert-commander --branch=pr-${{ github.event.pull_request.number }}
+
+      - name: Generate deployment details
+        id: deployment-info
+        run: |
+          PREVIEW_URL="https://pr-${{ github.event.pull_request.number }}.geo-alert-commander.pages.dev"
+          echo "preview-url=$PREVIEW_URL" >> $GITHUB_OUTPUT
+
+          # Extract deployment URL from Cloudflare output if available
+          CLOUDFLARE_URL="${{ steps.deploy.outputs.url }}"
+          if [ -n "$CLOUDFLARE_URL" ]; then
+            echo "cloudflare-url=$CLOUDFLARE_URL" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Post preview comment to PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = context.payload.pull_request.number;
+            const previewUrl = '${{ steps.deployment-info.outputs.preview-url }}';
+            const cloudflareUrl = '${{ steps.deployment-info.outputs.cloudflare-url }}' || previewUrl;
+            const commitSha = '${{ github.event.pull_request.head.sha }}';
+            const shortSha = commitSha.substring(0, 7);
+
+            const commentBody = `## 🚀 Preview Deployment Ready!
+
+            Your changes have been deployed to Cloudflare Pages.
+
+            **Preview URL:** ${cloudflareUrl}
+
+            **Deployment Details:**
+            - Branch: \`${{ github.event.pull_request.head.ref }}\`
+            - Commit: \`${shortSha}\`
+            - Build: ✅ Successful
+
+            ---
+
+            **Testing the PWA:**
+            1. Visit the preview URL on your mobile device
+            2. Install the app (Add to Home Screen)
+            3. Test offline functionality
+
+            **Note:** The preview deployment uses the same service worker and manifest as production. Clear your browser cache if you've previously installed the app.
+
+            ---
+
+            <sub>Deployed via [Cloudflare Pages](https://pages.cloudflare.com/)</sub>`;
+
+            // Find existing preview comment
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+            });
+
+            const botComment = comments.find(comment =>
+              comment.user.type === 'Bot' &&
+              comment.body.includes('Preview Deployment Ready')
+            );
+
+            if (botComment) {
+              // Update existing comment
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: commentBody,
+              });
+            } else {
+              // Create new comment
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body: commentBody,
+              });
+            }
+
+      - name: Generate deployment summary
+        run: |
+          echo "## 🎉 PR Preview Deployed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Preview URL:** ${{ steps.deployment-info.outputs.preview-url }}" >> $GITHUB_STEP_SUMMARY
+          echo "**PR Number:** #${{ github.event.pull_request.number }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** ${{ github.event.pull_request.head.ref }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** ${{ github.event.pull_request.head.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Build Stats:**" >> $GITHUB_STEP_SUMMARY
+          echo "- Node version: $(node --version)" >> $GITHUB_STEP_SUMMARY
+          echo "- NPM version: $(npm --version)" >> $GITHUB_STEP_SUMMARY
+
+  deployment-skipped:
+    name: Deployment Skipped (Fork)
+    runs-on: ubuntu-latest
+    needs: security-check
+    if: needs.security-check.outputs.is-fork == 'true'
+    steps:
+      - name: Comment on PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const commentBody = `## ⚠️ Preview Deployment Skipped
+
+            Preview deployments are not available for pull requests from forked repositories due to security restrictions.
+
+            **Why?** Deploying from forks would expose sensitive secrets (Cloudflare API tokens) to external contributors.
+
+            **What you can do:**
+            - Build and test locally using \`npm run build && npm run preview\`
+            - Wait for a maintainer to review and potentially deploy a preview manually
+            - If you're a maintainer, close and reopen this PR from a branch in the main repository
+
+            ---
+
+            <sub>For more information, see [GitHub Actions security best practices](https://docs.github.com/en/actions/security-guides/security-hardening-for-github-actions)</sub>`;
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              body: commentBody,
+            });

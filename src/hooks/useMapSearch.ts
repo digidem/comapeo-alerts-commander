@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import mapboxgl from "mapbox-gl";
+import maplibregl from "maplibre-gl";
 
 interface Coordinates {
   lat: number;
@@ -9,8 +10,10 @@ interface Coordinates {
 }
 
 export const useMapSearch = (
-  mapInstance: mapboxgl.Map | null,
-  markerRef: React.MutableRefObject<mapboxgl.Marker | null>,
+  mapInstance: mapboxgl.Map | maplibregl.Map | null,
+  markerRef: React.MutableRefObject<
+    mapboxgl.Marker | maplibregl.Marker | null
+  >,
   onCoordinatesChange: (coords: Coordinates) => void,
   options: { autoZoom?: boolean } = { autoZoom: false },
 ) => {
@@ -44,71 +47,101 @@ export const useMapSearch = (
   const handleSearch = async () => {
     if (!searchQuery.trim()) return;
 
-    const accessToken = mapboxgl.accessToken;
-    if (!accessToken) {
-      toast.error("Mapbox access token is not configured");
-      return;
-    }
-
     setIsSearching(true);
 
     try {
-      const response = await fetch(
-        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(searchQuery)}.json?access_token=${accessToken}&limit=1`,
-      );
+      const accessToken = mapboxgl.accessToken;
+      let lat: number;
+      let lng: number;
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(
-          `Geocoding API error: ${response.status} - ${errorData.message || response.statusText}`,
+      if (accessToken) {
+        // Use Mapbox geocoding when token is available
+        const response = await fetch(
+          `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(searchQuery)}.json?access_token=${accessToken}&limit=1`,
         );
-      }
 
-      const data = await response.json();
-
-      if (data.features && data.features.length > 0) {
-        const feature = data.features[0];
-        const [lng, lat] = feature.center;
-
-        const result = { lat, lng };
-        onCoordinatesChange(result);
-        saveRecentSearch(searchQuery);
-
-        // Update map center and marker
-        if (mapInstance) {
-          // Only auto-zoom if enabled
-          if (options.autoZoom) {
-            mapInstance.flyTo({
-              center: [lng, lat],
-              zoom: 10,
-            });
-          } else {
-            // Just center the map without changing zoom
-            mapInstance.setCenter([lng, lat]);
-          }
-
-          if (markerRef.current) {
-            markerRef.current.remove();
-          }
-
-          markerRef.current = new mapboxgl.Marker({
-            color: "#ef4444",
-          })
-            .setLngLat([lng, lat])
-            .addTo(mapInstance);
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(
+            `Geocoding API error: ${response.status} - ${errorData.message || response.statusText}`,
+          );
         }
 
-        toast.success(
-          t("map.locationFound", {
-            query: searchQuery,
-            lat: lat.toString(),
-            lng: lng.toString(),
-          }),
-        );
-        setSearchQuery("");
+        const data = await response.json();
+
+        if (data.features && data.features.length > 0) {
+          const feature = data.features[0];
+          [lng, lat] = feature.center;
+        } else {
+          toast.error(t("map.locationNotFound"));
+          return;
+        }
       } else {
-        toast.error(t("map.locationNotFound"));
+        // Use Nominatim (OSM) geocoding as fallback when no token
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&limit=1`,
+          {
+            headers: {
+              "User-Agent": "GeoAlertCommander/1.0",
+            },
+          },
+        );
+
+        if (!response.ok) {
+          throw new Error(`Nominatim API error: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        if (data && data.length > 0) {
+          lat = parseFloat(data[0].lat);
+          lng = parseFloat(data[0].lon);
+        } else {
+          toast.error(t("map.locationNotFound"));
+          return;
+        }
       }
+
+      const result = { lat, lng };
+      onCoordinatesChange(result);
+      saveRecentSearch(searchQuery);
+
+      // Update map center and marker
+      if (mapInstance) {
+        // Only auto-zoom if enabled
+        if (options.autoZoom) {
+          mapInstance.flyTo({
+            center: [lng, lat],
+            zoom: 10,
+          });
+        } else {
+          // Just center the map without changing zoom
+          mapInstance.setCenter([lng, lat]);
+        }
+
+        if (markerRef.current) {
+          markerRef.current.remove();
+        }
+
+        // Use the appropriate Marker class - check if using Mapbox or MapLibre
+        const MarkerClass = mapboxgl.accessToken
+          ? mapboxgl.Marker
+          : maplibregl.Marker;
+        markerRef.current = new MarkerClass({
+          color: "#ef4444",
+        })
+          .setLngLat([lng, lat])
+          .addTo(mapInstance as any);
+      }
+
+      toast.success(
+        t("map.locationFound", {
+          query: searchQuery,
+          lat: lat.toString(),
+          lng: lng.toString(),
+        }),
+      );
+      setSearchQuery("");
     } catch (error) {
       console.error("Geocoding error:", error);
       const errorMessage =

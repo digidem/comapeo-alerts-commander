@@ -35,6 +35,7 @@ const Index = () => {
   >("auth");
   const [alertsRefreshKey, setAlertsRefreshKey] = useState(0);
   const [isLoadingProjects, setIsLoadingProjects] = useState(false);
+  const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
 
   // Function to fetch projects
   const fetchProjects = async (creds: Credentials) => {
@@ -98,8 +99,12 @@ const Index = () => {
     toast.success(t("auth.loggedOutSuccessfully"));
   };
 
-  const handleCoordinatesSet = (coords: Coordinates) => {
+  const handleCoordinatesSet = (
+    coords: Coordinates,
+    currentSelectedProjectId?: string,
+  ) => {
     setCoordinates(coords);
+    setCurrentProjectId(currentSelectedProjectId || null);
     setCurrentStep("projects");
   };
 
@@ -109,6 +114,11 @@ const Index = () => {
   };
 
   const handleAlertSuccess = () => {
+    // Select the first project that had an alert created
+    if (selectedProjects.length > 0) {
+      localStorage.setItem("selectedProjectId", selectedProjects[0]);
+    }
+
     setCurrentStep("map");
     setCoordinates(null);
     setSelectedProjects([]);
@@ -141,6 +151,7 @@ const Index = () => {
             projects={projects}
             setProjects={setProjects}
             onLogout={handleLogout}
+            defaultSelectedProjectId={currentProjectId}
           />
         );
       case "alert":

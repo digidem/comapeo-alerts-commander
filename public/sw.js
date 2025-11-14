@@ -1,5 +1,18 @@
-const CACHE_NAME = "comaeo-alert-v1";
-const urlsToCache = ["/", "/manifest.json", "/icon-192.png", "/icon-512.png"];
+const CACHE_NAME = "comapeo-alert-v2";
+const urlsToCache = [
+  "/",
+  "/manifest.json",
+  "/icon.svg",
+  "/favicon.ico",
+  "/icon-72.png",
+  "/icon-96.png",
+  "/icon-128.png",
+  "/icon-144.png",
+  "/icon-152.png",
+  "/icon-192.png",
+  "/icon-384.png",
+  "/icon-512.png",
+];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(

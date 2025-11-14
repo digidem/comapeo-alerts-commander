@@ -16,7 +16,9 @@ import { useMapSearch } from "@/hooks/useMapSearch";
 import { useMapInteraction } from "@/hooks/useMapInteraction";
 import { useTranslation } from "react-i18next";
 import mapboxgl from "mapbox-gl";
+import maplibregl from "maplibre-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
+import "maplibre-gl/dist/maplibre-gl.css";
 
 interface Coordinates {
   lat: number;
@@ -24,17 +26,16 @@ interface Coordinates {
 }
 
 interface MapInterfaceProps {
-  onCoordinatesSet: (coordinates: Coordinates) => void;
+  onCoordinatesSet: (
+    coordinates: Coordinates,
+    currentSelectedProjectId?: string,
+  ) => void;
   onLogout: () => void;
   coordinates: Coordinates | null;
   credentials?: any;
   projects?: any[];
   isLoadingProjects?: boolean;
 }
-
-// Default Mapbox token
-const DEFAULT_MAPBOX_TOKEN =
-  "pk.eyJ1IjoibHVhbmRybyIsImEiOiJjanY2djRpdnkwOWdqM3lwZzVuaGIxa3VsIn0.jamcK2t2I1j3TXkUQFIsjQ";
 
 interface Project {
   projectId: string;
@@ -54,23 +55,15 @@ export const MapInterface = ({
     coordinates,
   );
   const [showManualEntry, setShowManualEntry] = useState(false);
-  const [mapboxToken, setMapboxToken] = useState("");
+  // Initialize mapboxToken directly from environment to avoid async timing issues
+  const [mapboxToken, setMapboxToken] = useState(() => {
+    const envToken = import.meta.env.VITE_MAPBOX_TOKEN;
+    return envToken && envToken.trim() ? envToken : "";
+  });
   const [showTokenInput, setShowTokenInput] = useState(false);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
 
   const { isInstallable, installApp } = usePWAInstall();
-
-  // Check for environment variable or use default token
-  useEffect(() => {
-    const envToken = import.meta.env.VITE_MAPBOX_TOKEN;
-    if (envToken && envToken.trim()) {
-      setMapboxToken(envToken);
-      setShowTokenInput(false);
-    } else {
-      setMapboxToken(DEFAULT_MAPBOX_TOKEN);
-      setShowTokenInput(false);
-    }
-  }, []);
 
   useEffect(() => {
     if (coordinates) {
@@ -120,7 +113,7 @@ export const MapInterface = ({
     loadAlerts,
     cleanupMarkers,
   } = useMapAlerts(credentials, selectedProject, mapInstanceRef, {
-    autoFitBounds: false, // Prevent automatic zoom changes when alerts are loaded
+    autoFitBounds: true, // Automatically fit map bounds to show all alerts
   });
 
   const {
@@ -153,25 +146,32 @@ export const MapInterface = ({
     setShowTokenInput(false);
   };
 
-  const handleManualCoords = useCallback((coords: Coordinates) => {
-    setSelectedCoords(coords);
+  const handleManualCoords = useCallback(
+    (coords: Coordinates) => {
+      setSelectedCoords(coords);
 
-    // Update map center and marker without changing zoom
-    if (mapInstanceRef.current) {
-      // Just center the map without changing zoom to prevent jarring experience
-      mapInstanceRef.current.setCenter([coords.lng, coords.lat]);
+      // Update map center and marker without changing zoom
+      if (mapInstanceRef.current) {
+        // Just center the map without changing zoom to prevent jarring experience
+        mapInstanceRef.current.setCenter([coords.lng, coords.lat]);
 
-      if (markerRef.current) {
-        markerRef.current.remove();
+        if (markerRef.current) {
+          markerRef.current.remove();
+        }
+
+        // Use the appropriate Marker class based on which library we're using
+        const MarkerClass = mapboxgl.accessToken
+          ? mapboxgl.Marker
+          : maplibregl.Marker;
+        markerRef.current = new MarkerClass({
+          color: "#ef4444",
+        })
+          .setLngLat([coords.lng, coords.lat])
+          .addTo(mapInstanceRef.current as any);
       }
-
-      markerRef.current = new mapboxgl.Marker({
-        color: "#ef4444",
-      })
-        .setLngLat([coords.lng, coords.lat])
-        .addTo(mapInstanceRef.current);
-    }
-  }, []);
+    },
+    [],
+  );
 
   const handleRecentSearchClick = useCallback(
     (search: string) => {
@@ -192,8 +192,23 @@ export const MapInterface = ({
       navigator.vibrate([50, 100, 50]);
     }
 
-    onCoordinatesSet(selectedCoords);
-  }, [selectedCoords, t, onCoordinatesSet]);
+    onCoordinatesSet(selectedCoords, selectedProject?.projectId);
+  }, [selectedCoords, selectedProject, onCoordinatesSet]); // Removed 't' to prevent re-render on language change
+
+  const handleCancelCoordinates = useCallback(() => {
+    setSelectedCoords(null);
+
+    // Remove marker from map
+    if (markerRef.current) {
+      markerRef.current.remove();
+      markerRef.current = null;
+    }
+
+    // Haptic feedback
+    if ("vibrate" in navigator) {
+      navigator.vibrate(50);
+    }
+  }, [markerRef]);
 
   if (showTokenInput) {
     return (
@@ -302,6 +317,7 @@ export const MapInterface = ({
         <CoordinateDisplay
           coordinates={selectedCoords}
           onContinue={handleContinue}
+          onCancel={handleCancelCoordinates}
         />
       )}
 

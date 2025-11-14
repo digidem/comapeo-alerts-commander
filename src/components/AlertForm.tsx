@@ -34,6 +34,40 @@ interface AlertFormProps {
 
 type SubmissionState = "idle" | "loading" | "success" | "error" | "partial";
 
+const getDefaultStartTime = () => {
+  const now = new Date();
+  // Format as YYYY-MM-DDTHH:mm for datetime-local input
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  const hours = String(now.getHours()).padStart(2, "0");
+  const minutes = String(now.getMinutes()).padStart(2, "0");
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+};
+
+const getDefaultEndTime = () => {
+  const now = new Date();
+  // Add 1 month safely handling month-end edge cases
+  const oneMonthLater = new Date(now);
+  const currentDay = now.getDate();
+
+  oneMonthLater.setMonth(oneMonthLater.getMonth() + 1);
+
+  // Handle edge case: if day changed due to month overflow (e.g., Jan 31 -> Mar 3)
+  // Set to last day of previous month instead
+  if (oneMonthLater.getDate() < currentDay) {
+    oneMonthLater.setDate(0); // Sets to last day of previous month
+  }
+
+  // Format as YYYY-MM-DDTHH:mm for datetime-local input
+  const year = oneMonthLater.getFullYear();
+  const month = String(oneMonthLater.getMonth() + 1).padStart(2, "0");
+  const day = String(oneMonthLater.getDate()).padStart(2, "0");
+  const hours = String(oneMonthLater.getHours()).padStart(2, "0");
+  const minutes = String(oneMonthLater.getMinutes()).padStart(2, "0");
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+};
+
 export const AlertForm = ({
   coordinates,
   selectedProjects,
@@ -43,8 +77,8 @@ export const AlertForm = ({
   onSuccess,
 }: AlertFormProps) => {
   const { t } = useTranslation();
-  const [startTime, setStartTime] = useState("");
-  const [endTime, setEndTime] = useState("");
+  const [startTime, setStartTime] = useState(getDefaultStartTime());
+  const [endTime, setEndTime] = useState(getDefaultEndTime());
   const [sourceId, setSourceId] = useState("");
   const [alertName, setAlertName] = useState("");
   const [submissionState, setSubmissionState] =
