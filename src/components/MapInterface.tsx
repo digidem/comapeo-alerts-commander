@@ -56,7 +56,7 @@ export const MapInterface = ({
   );
   const [showManualEntry, setShowManualEntry] = useState(false);
   // Initialize mapboxToken directly from environment to avoid async timing issues
-  const [mapboxToken] = useState(() => {
+  const [mapboxToken, setMapboxToken] = useState(() => {
     const envToken = import.meta.env.VITE_MAPBOX_TOKEN;
     return envToken && envToken.trim() ? envToken : "";
   });
