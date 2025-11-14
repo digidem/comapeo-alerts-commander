@@ -106,6 +106,29 @@ The development server includes a proxy configuration for the CoMapeo API to avo
 - View alerts for the selected project on the map
 - Click on alert markers to view details
 
+### Progressive Web App (PWA)
+
+This application can be installed as a PWA on supported devices:
+
+**Desktop:**
+- Look for the install button in your browser's address bar
+- Chrome/Edge: Click the install icon
+- Firefox: Click the menu > Install
+
+**Mobile:**
+- iOS Safari: Tap Share > Add to Home Screen
+- Android Chrome: Tap Menu > Add to Home Screen
+
+**Customizing Icons:**
+
+The app uses a simple red circle as the default icon. To use your own logo:
+
+1. Replace `public/icon.svg` with your logo (SVG format recommended)
+2. Run `npm run generate:icons` to generate all required sizes
+3. All icon sizes will be automatically created
+
+For detailed instructions, see [ICONS.md](./ICONS.md)
+
 ## Project Structure
 
 ```
@@ -127,6 +150,7 @@ src/
 - `npm run build:dev` - Build in development mode
 - `npm run preview` - Preview production build
 - `npm run lint` - Run ESLint
+- `npm run generate:icons` - Generate PWA icons from source SVG
 - `npm run translate:all` - Generate all translations
 
 ### Adding Translations
