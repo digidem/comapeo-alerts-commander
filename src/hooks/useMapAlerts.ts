@@ -158,8 +158,8 @@ export const useMapAlerts = (
         );
 
         mapInstance.fitBounds(bounds as any, {
-          padding: 50,
-          maxZoom: 15,
+          padding: 100,
+          maxZoom: 12,
         });
       }
     },
