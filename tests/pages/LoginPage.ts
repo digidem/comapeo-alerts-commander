@@ -6,7 +6,7 @@ import { BasePage } from './BasePage';
  */
 export class LoginPage extends BasePage {
   // Locators
-  readonly serverUrlInput: Locator;
+  readonly serverNameInput: Locator;
   readonly bearerTokenInput: Locator;
   readonly rememberMeCheckbox: Locator;
   readonly loginButton: Locator;
@@ -16,11 +16,15 @@ export class LoginPage extends BasePage {
   constructor(page: Page) {
     super(page);
 
-    // Initialize locators using semantic selectors
-    this.serverUrlInput = page.getByLabel(/server.*url/i);
-    this.bearerTokenInput = page.getByLabel(/bearer.*token/i);
-    this.rememberMeCheckbox = page.getByLabel(/remember.*me/i);
-    this.loginButton = page.getByRole('button', { name: /log.*in|sign.*in/i });
+    // Use exact labels from the i18n translations
+    // Also use IDs as fallback for more reliable selection
+    this.serverNameInput = page.getByLabel('Server Name')
+      .or(page.locator('#serverName'));
+    this.bearerTokenInput = page.getByLabel('Bearer Token')
+      .or(page.locator('#bearerToken'));
+    this.rememberMeCheckbox = page.getByLabel('Remember me')
+      .or(page.locator('#rememberMe'));
+    this.loginButton = page.getByRole('button', { name: /connect/i });
     this.errorMessage = page.getByRole('alert');
     this.loadingIndicator = page.locator('[data-testid="loading"], .loading, .spinner');
   }
@@ -35,8 +39,8 @@ export class LoginPage extends BasePage {
   /**
    * Perform login with credentials
    */
-  async login(serverUrl: string, token: string, rememberMe = false) {
-    await this.serverUrlInput.fill(serverUrl);
+  async login(serverName: string, token: string, rememberMe = false) {
+    await this.serverNameInput.fill(serverName);
     await this.bearerTokenInput.fill(token);
 
     if (rememberMe) {
@@ -50,10 +54,10 @@ export class LoginPage extends BasePage {
    * Login with valid test credentials from environment
    */
   async loginWithValidCredentials(rememberMe = false) {
-    const serverUrl = process.env.TEST_SERVER_URL || 'https://demo.comapeo.cloud';
+    const serverName = process.env.TEST_SERVER_URL || 'https://demo.comapeo.cloud';
     const token = process.env.TEST_BEARER_TOKEN || 'test-token-123';
 
-    await this.login(serverUrl, token, rememberMe);
+    await this.login(serverName, token, rememberMe);
   }
 
   /**
@@ -67,7 +71,7 @@ export class LoginPage extends BasePage {
    * Clear the login form
    */
   async clearForm() {
-    await this.serverUrlInput.clear();
+    await this.serverNameInput.clear();
     await this.bearerTokenInput.clear();
     if (await this.rememberMeCheckbox.isChecked()) {
       await this.rememberMeCheckbox.uncheck();
@@ -123,7 +127,7 @@ export class LoginPage extends BasePage {
   }
 
   async expectFormEmpty() {
-    await expect(this.serverUrlInput).toBeEmpty();
+    await expect(this.serverNameInput).toBeEmpty();
     await expect(this.bearerTokenInput).toBeEmpty();
     await expect(this.rememberMeCheckbox).not.toBeChecked();
   }

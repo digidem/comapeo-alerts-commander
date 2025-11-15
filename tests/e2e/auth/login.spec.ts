@@ -6,13 +6,15 @@ test.describe('User Authentication', () => {
   let loginPage: LoginPage;
 
   test.beforeEach(async ({ page }) => {
+    // Each test gets a fresh browser context (clean storage) by default
+    // Navigate to the page
+    await page.goto('/', { waitUntil: 'load' });
     loginPage = new LoginPage(page);
-    await loginPage.navigate();
   });
 
   test('should display login form', async () => {
     // Verify form elements are visible
-    await expect(loginPage.serverUrlInput).toBeVisible();
+    await expect(loginPage.serverNameInput).toBeVisible();
     await expect(loginPage.bearerTokenInput).toBeVisible();
     await expect(loginPage.rememberMeCheckbox).toBeVisible();
     await expect(loginPage.loginButton).toBeVisible();
@@ -95,7 +97,7 @@ test.describe('User Authentication', () => {
     await loginPage.expectLoginButtonDisabled();
 
     // Fill form
-    await loginPage.serverUrlInput.fill('https://example.com');
+    await loginPage.serverNameInput.fill('https://example.com');
     await loginPage.bearerTokenInput.fill('test-token');
 
     // Should now be enabled
@@ -128,7 +130,7 @@ test.describe('Logout', () => {
     await loginPage.expectLoginSuccess();
 
     // Verify localStorage has credentials
-    const beforeLogout = await page.evaluate(() => localStorage.getItem('credentials'));
+    const beforeLogout = await page.evaluate(() => localStorage.getItem('mapAlert_credentials'));
     expect(beforeLogout).toBeTruthy();
 
     // Logout
@@ -136,7 +138,7 @@ test.describe('Logout', () => {
     await mapPage.logout();
 
     // Verify localStorage is cleared
-    const afterLogout = await page.evaluate(() => localStorage.getItem('credentials'));
+    const afterLogout = await page.evaluate(() => localStorage.getItem('mapAlert_credentials'));
     expect(afterLogout).toBeFalsy();
   });
 });

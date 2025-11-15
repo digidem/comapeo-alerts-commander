@@ -55,6 +55,9 @@ export default defineConfig({
 
     /* Maximum time for navigation */
     navigationTimeout: 30 * 1000,
+
+    /* Disable service workers for tests */
+    serviceWorkers: 'block',
   },
 
   /* Configure projects for major browsers */
