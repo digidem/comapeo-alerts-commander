@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { LogOut, Settings, Download } from "lucide-react";
 import { toast } from "sonner";
@@ -25,6 +25,11 @@ interface Coordinates {
   lng: number;
 }
 
+interface Credentials {
+  serverName: string;
+  bearerToken: string;
+}
+
 interface MapInterfaceProps {
   onCoordinatesSet: (
     coordinates: Coordinates,
@@ -32,8 +37,8 @@ interface MapInterfaceProps {
   ) => void;
   onLogout: () => void;
   coordinates: Coordinates | null;
-  credentials?: any;
-  projects?: any[];
+  credentials?: Credentials;
+  projects?: Project[];
   isLoadingProjects?: boolean;
 }
 
@@ -61,19 +66,23 @@ export const MapInterface = ({
     return envToken && envToken.trim() ? envToken : "";
   });
   const [showTokenInput, setShowTokenInput] = useState(false);
-  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [selectedProject, setSelectedProject] = useState<Project | null>(() => {
+    if (projects.length > 0) {
+      const savedProjectId = localStorage.getItem("selectedProjectId");
+      const savedProject = savedProjectId
+        ? projects.find((p) => p.projectId === savedProjectId)
+        : null;
+      return savedProject || projects[0];
+    }
+    return null;
+  });
+  const projectInitializedRef = useRef(false);
 
   const { isInstallable, installApp } = usePWAInstall();
 
+  // Initialize selected project when projects first load (only once)
   useEffect(() => {
-    if (coordinates) {
-      setSelectedCoords(coordinates);
-    }
-  }, [coordinates]);
-
-  // Initialize selected project from localStorage or default to first project
-  useEffect(() => {
-    if (projects.length > 0) {
+    if (projects.length > 0 && !projectInitializedRef.current) {
       const savedProjectId = localStorage.getItem("selectedProjectId");
       const savedProject = savedProjectId
         ? projects.find((p) => p.projectId === savedProjectId)
@@ -82,6 +91,7 @@ export const MapInterface = ({
       // Use saved project if found, otherwise default to first project
       const projectToSelect = savedProject || projects[0];
       setSelectedProject(projectToSelect);
+      projectInitializedRef.current = true;
     }
   }, [projects]);
 
@@ -124,7 +134,7 @@ export const MapInterface = ({
     searchInputRef,
     handleSearch,
     handleClearSearch,
-  } = useMapSearch(mapInstanceRef.current, markerRef, handleCoordinatesChange, {
+  } = useMapSearch(mapInstanceRef, markerRef, handleCoordinatesChange, {
     autoZoom: false, // Prevent automatic zoom changes when searching
   });
 
@@ -140,7 +150,7 @@ export const MapInterface = ({
     return () => {
       cleanupMarkers();
     };
-  }, []);
+  }, [cleanupMarkers]);
 
   const handleTokenSubmit = () => {
     setShowTokenInput(false);
@@ -167,10 +177,10 @@ export const MapInterface = ({
           color: "#ef4444",
         })
           .setLngLat([coords.lng, coords.lat])
-          .addTo(mapInstanceRef.current as any);
+          .addTo(mapInstanceRef.current);
       }
     },
-    [],
+    [mapInstanceRef, markerRef],
   );
 
   const handleRecentSearchClick = useCallback(
@@ -178,7 +188,7 @@ export const MapInterface = ({
       setSearchQuery(search);
       handleSearch();
     },
-    [handleSearch],
+    [handleSearch, setSearchQuery],
   );
 
   const handleContinue = useCallback(() => {
@@ -193,7 +203,7 @@ export const MapInterface = ({
     }
 
     onCoordinatesSet(selectedCoords, selectedProject?.projectId);
-  }, [selectedCoords, selectedProject, onCoordinatesSet]); // Removed 't' to prevent re-render on language change
+  }, [selectedCoords, selectedProject, onCoordinatesSet, t]);
 
   const handleCancelCoordinates = useCallback(() => {
     setSelectedCoords(null);
@@ -208,7 +218,8 @@ export const MapInterface = ({
     if ("vibrate" in navigator) {
       navigator.vibrate(50);
     }
-  }, [markerRef]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   if (showTokenInput) {
     return (

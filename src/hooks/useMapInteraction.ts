@@ -53,8 +53,10 @@ export const useMapInteraction = (
         }),
       );
     },
-    [onCoordinatesChange], // Removed 't' to prevent map re-render on language change
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [onCoordinatesChange],
   );
+  // Note: 't' is intentionally excluded to prevent map re-render on language change
 
   // Initialize map only once
   useEffect(() => {
@@ -133,7 +135,7 @@ export const useMapInteraction = (
         toast.error(t("map.mapConfigError"));
       });
 
-      map.on("click", handleMapClick as any);
+      map.on("click", handleMapClick);
 
       mapInstanceRef.current = map;
       initializedRef.current = true;
@@ -149,7 +151,10 @@ export const useMapInteraction = (
       console.error("Failed to initialize map:", error);
       toast.error(t("map.mapConfigError"));
     }
-  }, [mapboxToken, handleMapClick]); // Removed 't' to prevent map re-render on language change
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mapboxToken, handleMapClick]);
+  // Note: selectedCoords is only used for initial map center, not as a dependency
+  // The separate effect below handles marker updates when coords change
 
   // Update marker when selectedCoords changes (without recreating map)
   useEffect(() => {
@@ -170,7 +175,7 @@ export const useMapInteraction = (
         color: "#ef4444",
       })
         .setLngLat([selectedCoords.lng, selectedCoords.lat])
-        .addTo(map as any);
+        .addTo(map);
     } else {
       // Remove marker if no coordinates
       if (markerRef.current) {

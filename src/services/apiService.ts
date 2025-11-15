@@ -33,6 +33,27 @@ interface MapAlert {
   sourceId: string;
 }
 
+interface ApiProject {
+  projectId?: string;
+  id?: string;
+  name?: string;
+  title?: string;
+}
+
+interface ApiAlert {
+  id?: string;
+  metadata?: {
+    alert_type?: string;
+  };
+  geometry?: {
+    type: "Point";
+    coordinates: [number, number];
+  };
+  detectionDateStart?: string;
+  detectionDateEnd?: string;
+  sourceId?: string;
+}
+
 class ApiService {
   private getApiClient(credentials: Credentials): AxiosInstance {
     const baseURL = this.getBaseUrl(credentials.serverName);
@@ -102,7 +123,7 @@ class ApiService {
       const responseData = response.data;
 
       // Handle the actual API response format: {"data": [...]}
-      let projectsArray: any[] = [];
+      let projectsArray: ApiProject[] = [];
 
       if (responseData.data && Array.isArray(responseData.data)) {
         // Standard format: {"data": [...]}
@@ -123,7 +144,7 @@ class ApiService {
       }
 
       // Map the projects to our interface
-      return projectsArray.map((project: any, index: number) => ({
+      return projectsArray.map((project: ApiProject, index: number) => ({
         projectId: project.projectId || project.id || `project-${index}`,
         name: project.name || project.title || `Project ${index + 1}`,
       }));
@@ -174,7 +195,7 @@ class ApiService {
         const responseData = response.data;
 
         // Handle the actual API response format: {"data": [...]}
-        let alertsArray: any[] = [];
+        let alertsArray: ApiAlert[] = [];
 
         if (responseData.data && Array.isArray(responseData.data)) {
           // Standard format: {"data": [...]}
@@ -193,7 +214,7 @@ class ApiService {
           continue; // Skip this project, don't treat as error
         }
 
-        alertsArray.forEach((alert: any) => {
+        alertsArray.forEach((alert: ApiAlert) => {
           if (alert.geometry && alert.geometry.coordinates) {
             alerts.push({
               id: alert.id || `${project.projectId}-${Date.now()}`,

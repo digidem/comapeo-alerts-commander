@@ -14,9 +14,19 @@ export interface MapAlert {
   sourceId: string;
 }
 
+interface Credentials {
+  serverName: string;
+  bearerToken: string;
+}
+
+interface Project {
+  projectId: string;
+  name: string;
+}
+
 export const useMapAlerts = (
-  credentials: any,
-  selectedProject: any | null,
+  credentials: Credentials | undefined,
+  selectedProject: Project | null,
   mapInstanceRef: React.MutableRefObject<
     mapboxgl.Map | maplibregl.Map | null
   >,
@@ -132,7 +142,7 @@ export const useMapAlerts = (
             anchor: "center",
           })
             .setLngLat([lng, lat])
-            .addTo(mapInstance as any);
+            .addTo(mapInstance);
 
           alertMarkersRef.current.push(marker);
         } catch (error) {
@@ -157,13 +167,13 @@ export const useMapAlerts = (
           new LngLatBoundsClass(coordinates[0], coordinates[0]),
         );
 
-        mapInstance.fitBounds(bounds as any, {
+        mapInstance.fitBounds(bounds, {
           padding: 100,
           maxZoom: 12,
         });
       }
     },
-    [options.autoFitBounds],
+    [options.autoFitBounds, mapInstanceRef],
   );
 
   const loadAlerts = useCallback(async () => {
@@ -204,13 +214,13 @@ export const useMapAlerts = (
     if (mapInstanceRef.current) {
       addAlertMarkers(alerts);
     }
-  }, [alerts]); // Only depend on alerts
+  }, [alerts, addAlertMarkers, mapInstanceRef]);
 
   // Clean up markers when component unmounts
-  const cleanupMarkers = () => {
+  const cleanupMarkers = useCallback(() => {
     alertMarkersRef.current.forEach((marker) => marker.remove());
     alertMarkersRef.current = [];
-  };
+  }, []);
 
   return {
     alerts,

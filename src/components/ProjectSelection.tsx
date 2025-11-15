@@ -69,7 +69,7 @@ export const ProjectSelection = ({
     };
 
     fetchProjects();
-  }, [credentials, projects.length, setProjects]);
+  }, [credentials, projects.length, setProjects, t]);
 
   const handleProjectToggle = (projectId: string) => {
     setSelectedProjects((prev) =>
