@@ -472,26 +472,163 @@ docker run --memory=512m --cpus=1 -p 8080:80 comapeo-alerts-commander
 
 ## CI/CD Integration
 
-### GitHub Actions
+### GitHub Actions Workflows
 
-The repository includes a GitHub Actions workflow (`.github/workflows/docker-publish.yml`) that automatically:
+The repository includes two automated workflows for Docker:
 
-1. **Builds** the Docker image on every push to main
-2. **Tags** appropriately (latest, version, commit)
-3. **Pushes** to Docker Hub
-4. **Tests** the built image
-5. **Publishes** build summary
+#### 1. Docker Build and Test (`.github/workflows/docker-test.yml`)
 
-### Required Secrets
+**Triggers:**
+- Every pull request
+- Every push to `main` or `develop` branches
 
-Add these secrets to your GitHub repository:
+**What it does:**
+1. **Lints Dockerfile** using Hadolint
+2. **Builds** Docker image for linux/amd64 and linux/arm64
+3. **Validates** image structure and required files
+4. **Tests** HTTP endpoints and security headers
+5. **Publishes** PR-specific images (e.g., `pr-42`) for testing
+6. **Comments** on PR with test instructions
 
+**Test Coverage:**
+- Dockerfile best practices validation
+- Image size and layer analysis
+- Health endpoint functionality
+- SPA routing behavior
+- Security header presence
+- Static asset caching
+
+#### 2. Publish Docker Image (`.github/workflows/docker-publish.yml`)
+
+**Triggers:**
+- Push to `main` branch
+- Version tags (e.g., `v1.2.3`)
+- Manual workflow dispatch
+
+**What it does:**
+1. **Extracts** project metadata from `package.json`
+2. **Builds** multi-platform images (amd64, arm64)
+3. **Tags** with intelligent versioning
+4. **Pushes** to Docker Hub
+5. **Verifies** published image works correctly
+
+**Generated Tags:**
+- `latest` - Latest main branch build
+- `main-abc1234` - Commit-specific tag
+- `v1.2.3`, `1.2`, `1` - Semantic version tags
+- Custom tags via workflow dispatch
+
+### Setup Requirements
+
+#### Required Secrets
+
+Add these secrets to your GitHub repository (Settings → Secrets and variables → Actions):
+
+**For Docker Hub publishing:**
 - `DOCKERHUB_USERNAME` - Your Docker Hub username
-- `DOCKERHUB_TOKEN` - Docker Hub access token (create at hub.docker.com/settings/security)
+- `DOCKERHUB_TOKEN` - Docker Hub access token
 
-### Manual Workflow Dispatch
+**How to create a Docker Hub token:**
+1. Go to https://hub.docker.com/settings/security
+2. Click "New Access Token"
+3. Name it "GitHub Actions" (or similar)
+4. Copy the token (you won't see it again!)
+5. Add it to GitHub Secrets as `DOCKERHUB_TOKEN`
 
-Trigger builds manually from GitHub Actions tab with custom options.
+### Workflow Usage
+
+#### Testing Pull Requests
+
+When you create a PR, the test workflow:
+1. Validates your Dockerfile changes
+2. Builds and tests the image
+3. Publishes a PR-specific image (if credentials configured)
+4. Comments on the PR with instructions
+
+**Test the PR image:**
+```bash
+# Pull the PR image (from PR comment)
+docker pull <username>/comapeo-alerts-commander:pr-42
+
+# Run it locally
+docker run -p 8080:80 <username>/comapeo-alerts-commander:pr-42
+
+# Test in your browser
+open http://localhost:8080
+```
+
+#### Publishing to Production
+
+When you merge to main:
+1. Test workflow validates the build
+2. Publish workflow creates and pushes images
+3. Images are tagged as `latest` and commit-specific
+
+**Creating version releases:**
+```bash
+# Create and push a version tag
+git tag -a v1.2.3 -m "Release version 1.2.3"
+git push origin v1.2.3
+```
+
+This creates images with tags:
+- `v1.2.3`, `1.2.3`, `1.2`, `1`, `latest`
+
+### Monitoring Workflows
+
+**Check workflow status:**
+- Go to the "Actions" tab in GitHub
+- View workflow runs and logs
+- Check build summaries for details
+
+**What to look for:**
+- Build duration (should use cache after first run)
+- Image size (check for unexpected growth)
+- Test results (all should pass)
+- Security headers (all should be present)
+
+### Manual Workflow Triggers
+
+You can manually trigger the publish workflow:
+
+1. Go to Actions → "Publish Docker Image to Docker Hub"
+2. Click "Run workflow"
+3. Choose whether to push to Docker Hub
+4. Optionally specify a custom tag
+5. Click "Run workflow"
+
+Useful for:
+- Testing workflow changes
+- Creating special release tags
+- Republishing after fixes
+
+### Caching Strategy
+
+Both workflows use GitHub Actions cache:
+- Docker build layers are cached
+- Subsequent builds are much faster
+- Cache is shared across workflow runs
+- Reduces build time from ~10min to ~2min
+
+### Continuous Integration Benefits
+
+**Automated quality checks:**
+- Every PR is validated before merge
+- Dockerfile linting catches issues early
+- Automated testing ensures reliability
+- Security headers are verified
+
+**Fast feedback:**
+- Results available within minutes
+- PR comments show test status
+- Build summaries provide details
+- Failed tests prevent merging
+
+**Consistent builds:**
+- Same build process every time
+- Multi-platform support guaranteed
+- Version tagging is automatic
+- No manual steps required
 
 ## Additional Resources
 
