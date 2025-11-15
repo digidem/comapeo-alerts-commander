@@ -67,7 +67,9 @@
 
     <!-- Service Worker Registration -->
     <script>
-      if ("serviceWorker" in navigator) {
+      // Skip service worker registration in automated test environments
+      // to prevent browser crashes during Playwright/Selenium testing
+      if ("serviceWorker" in navigator && !navigator.webdriver) {
         window.addEventListener("load", () => {
           navigator.serviceWorker
             .register("/sw.js")

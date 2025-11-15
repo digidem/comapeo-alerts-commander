@@ -1,8 +1,14 @@
 import { test, expect } from '@playwright/test';
 
-test('debug - check what renders on homepage', async ({ page, context }) => {
-  // Disable service workers at context level
-  await context.route('**/sw.js', route => route.abort());
+test('debug - check what renders on homepage', async ({ page }) => {
+  // Inject script before page load to disable service worker
+  await page.addInitScript(() => {
+    // Override service worker registration to prevent it
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    delete (navigator as any).serviceWorker;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (window as any).__PLAYWRIGHT_TEST__ = true;
+  });
 
   // Listen for various page events
   page.on('console', msg => console.log('BROWSER CONSOLE:', msg.text()));
@@ -18,14 +24,29 @@ test('debug - check what renders on homepage', async ({ page, context }) => {
       timeout: 30000
     });
 
-    // Small wait for React to render
-    await page.waitForTimeout(1000);
+    // Wait longer for React to fully render
+    await page.waitForTimeout(2000);
 
     console.log('Page loaded successfully, URL:', page.url());
 
-    // Just verify the page title without interacting further
-    console.log('✓ Page loaded without crashing');
-    expect(page.url()).toContain('localhost');
+    // Try to interact with page elements WITHOUT using page.evaluate()
+    console.log('=== TESTING PAGE INTERACTION ===');
+
+    const inputCount = await page.locator('input').count();
+    console.log('Input count:', inputCount);
+
+    if (inputCount > 0) {
+      const firstInput = page.locator('input').first();
+      const id = await firstInput.getAttribute('id');
+      console.log('First input ID:', id);
+
+      // Try to check if it's visible
+      const isVisible = await firstInput.isVisible();
+      console.log('First input visible:', isVisible);
+    }
+
+    console.log('✓ Page interaction successful!');
+    expect(inputCount).toBeGreaterThan(0);
   } catch (error) {
     console.log('ERROR during test:', error);
     throw error;

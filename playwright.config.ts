@@ -55,9 +55,6 @@ export default defineConfig({
 
     /* Maximum time for navigation */
     navigationTimeout: 30 * 1000,
-
-    /* Disable service workers for tests */
-    serviceWorkers: 'block',
   },
 
   /* Configure projects for major browsers */
@@ -74,7 +71,8 @@ export default defineConfig({
             '--no-sandbox',
             '--disable-web-security',
             '--disable-features=IsolateOrigins,site-per-process',
-            '--disable-blink-features=AutomationControlled',
+            // NOTE: Do not add --disable-blink-features=AutomationControlled
+            // We need navigator.webdriver to be set so SW registration is skipped
           ],
         },
       },
