@@ -14,14 +14,6 @@ export const usePWAInstall = () => {
   );
 
   useEffect(() => {
-    // Check if already installed
-    const mediaQuery = window.matchMedia("(display-mode: standalone)");
-    const handleChange = (e: MediaQueryListEvent) => {
-      setIsInstalled(e.matches);
-    };
-
-    mediaQuery.addEventListener("change", handleChange);
-
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
@@ -38,7 +30,6 @@ export const usePWAInstall = () => {
     window.addEventListener("appinstalled", handleAppInstalled);
 
     return () => {
-      mediaQuery.removeEventListener("change", handleChange);
       window.removeEventListener(
         "beforeinstallprompt",
         handleBeforeInstallPrompt,
