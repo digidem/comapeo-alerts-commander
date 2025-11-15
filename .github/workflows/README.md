@@ -9,8 +9,8 @@ This directory contains automated workflows for the CoMapeo Alerts Commander pro
 **Purpose:** Validate Docker builds on all pull requests and main branch pushes
 
 **Triggers:**
-- Push to `main` or `develop` branches
-- Pull requests targeting `main` or `develop`
+- Push to `main` branch
+- Pull requests targeting `main`
 - Ignores changes to documentation files (`**.md`, `docs/**`)
 
 **What it does:**
@@ -30,9 +30,11 @@ This directory contains automated workflows for the CoMapeo Alerts Commander pro
 
 3. **PR Image Publishing** (Optional)
    - Tags PR images as `pr-<number>` (e.g., `pr-42`)
-   - Pushes to Docker Hub if credentials are configured
-   - Adds comment to PR with test instructions
+   - Automatically detects if Docker Hub credentials are available
+   - Pushes to Docker Hub if `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` secrets are configured
+   - Adds comment to PR with appropriate instructions (pull command if published, local build instructions if not)
    - Allows reviewers to test PR changes in Docker
+   - Works gracefully without credentials (local testing only)
 
 **Required Secrets:**
 - `DOCKERHUB_USERNAME` - Docker Hub username (optional for testing)

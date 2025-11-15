@@ -108,31 +108,30 @@ docker run -v $(pwd)/custom-nginx.conf:/etc/nginx/conf.d/default.conf \
 
 ### Basic Setup
 
-Create `docker-compose.yml`:
+The repository includes an example Docker Compose file. Copy and customize it:
 
-```yaml
-version: '3.8'
+```bash
+# Copy the example file
+cp docker-compose.example.yml docker-compose.yml
 
-services:
-  web:
-    image: <dockerhub-username>/comapeo-alerts-commander:latest
-    container_name: comapeo-alerts
-    ports:
-      - "8080:80"
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
-      interval: 30s
-      timeout: 3s
-      start_period: 5s
-      retries: 3
+# Edit with your Docker Hub username
+nano docker-compose.yml  # or use your preferred editor
 ```
+
+The example file includes:
+- Pre-configured health checks
+- Resource limits (commented out, ready to enable)
+- Multiple deployment options (pre-built image or local build)
+- Network and volume examples
+- Labels for organization
 
 Run with:
 
 ```bash
 docker-compose up -d
 ```
+
+View the example file for all available configuration options.
 
 ### With Custom Build
 

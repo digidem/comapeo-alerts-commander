@@ -333,21 +333,11 @@ docker run -p 8080:80 comapeo-alerts-commander
 
 ### Docker Compose (Optional)
 
-Create a `docker-compose.yml` file for easier management:
+Copy the example compose file and customize it:
 
-```yaml
-version: '3.8'
-services:
-  web:
-    image: <dockerhub-username>/comapeo-alerts-commander:latest
-    ports:
-      - "8080:80"
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
-      interval: 30s
-      timeout: 3s
-      retries: 3
+```bash
+cp docker-compose.example.yml docker-compose.yml
+# Edit docker-compose.yml to set your Docker Hub username
 ```
 
 Then run:
@@ -355,6 +345,8 @@ Then run:
 ```bash
 docker-compose up -d
 ```
+
+See `docker-compose.example.yml` for all available options including resource limits, health checks, and network configuration.
 
 ### Available Tags
 

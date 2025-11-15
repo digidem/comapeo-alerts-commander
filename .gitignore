@@ -17,6 +17,10 @@ dist-ssr
 .env.local
 .env.production
 
+# Docker
+docker-compose.yml
+docker-compose.override.yml
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

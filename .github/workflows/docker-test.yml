@@ -4,21 +4,18 @@ on:
   push:
     branches:
       - main
-      - develop
     paths-ignore:
       - '**.md'
       - 'docs/**'
   pull_request:
     branches:
       - main
-      - develop
     paths-ignore:
       - '**.md'
       - 'docs/**'
 
 env:
   REGISTRY: docker.io
-  IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/comapeo-alerts-commander
 
 jobs:
   lint:
@@ -71,20 +68,33 @@ jobs:
 
           echo "Project: $PROJECT_NAME v$PROJECT_VERSION (Node $NODE_VERSION)"
 
+      - name: Set image name
+        id: image
+        run: |
+          # Use secret if available, otherwise use placeholder for testing
+          if [ -n "${{ secrets.DOCKERHUB_USERNAME }}" ]; then
+            IMAGE_NAME="${{ secrets.DOCKERHUB_USERNAME }}/comapeo-alerts-commander"
+          else
+            IMAGE_NAME="local/comapeo-alerts-commander"
+          fi
+          echo "name=$IMAGE_NAME" >> $GITHUB_OUTPUT
+          echo "Using image name: $IMAGE_NAME"
+
       - name: Generate Docker tags
         id: tags
         run: |
           TAGS=""
+          IMAGE_NAME="${{ steps.image.outputs.name }}"
 
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             # For PRs: pr-<number>
             PR_TAG="pr-${{ github.event.pull_request.number }}"
-            TAGS="${{ env.IMAGE_NAME }}:${PR_TAG}"
+            TAGS="${IMAGE_NAME}:${PR_TAG}"
             echo "primary_tag=${PR_TAG}" >> $GITHUB_OUTPUT
           else
-            # For main/develop: branch-<commit>
+            # For main branch: branch-<commit>
             BRANCH_TAG="${{ github.ref_name }}-$(echo ${{ github.sha }} | cut -c1-7)"
-            TAGS="${{ env.IMAGE_NAME }}:${BRANCH_TAG}"
+            TAGS="${IMAGE_NAME}:${BRANCH_TAG}"
             echo "primary_tag=${BRANCH_TAG}" >> $GITHUB_OUTPUT
           fi
 
@@ -240,8 +250,19 @@ jobs:
           docker stop test-container || true
           docker rm test-container || true
 
+      - name: Check Docker Hub credentials
+        id: check_creds
+        run: |
+          if [ -n "${{ secrets.DOCKERHUB_USERNAME }}" ] && [ -n "${{ secrets.DOCKERHUB_TOKEN }}" ]; then
+            echo "available=true" >> $GITHUB_OUTPUT
+            echo "Docker Hub credentials available"
+          else
+            echo "available=false" >> $GITHUB_OUTPUT
+            echo "Docker Hub credentials not configured (optional for PR testing)"
+          fi
+
       - name: Log in to Docker Hub (for PR images)
-        if: github.event_name == 'pull_request' && secrets.DOCKERHUB_USERNAME != ''
+        if: github.event_name == 'pull_request' && steps.check_creds.outputs.available == 'true'
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
@@ -250,41 +271,49 @@ jobs:
         continue-on-error: true
 
       - name: Tag and push PR image
-        if: github.event_name == 'pull_request' && secrets.DOCKERHUB_USERNAME != ''
+        if: github.event_name == 'pull_request' && steps.check_creds.outputs.available == 'true'
         run: |
           PR_TAG="pr-${{ github.event.pull_request.number }}"
+          IMAGE_NAME="${{ steps.image.outputs.name }}"
 
           # Tag the local test image
-          docker tag test-image:local ${{ env.IMAGE_NAME }}:${PR_TAG}
+          docker tag test-image:local ${IMAGE_NAME}:${PR_TAG}
 
           # Push to Docker Hub
-          docker push ${{ env.IMAGE_NAME }}:${PR_TAG} || echo "Failed to push (credentials may not be configured)"
+          docker push ${IMAGE_NAME}:${PR_TAG} || echo "Failed to push (credentials may not be configured)"
 
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**PR Image Published:**" >> $GITHUB_STEP_SUMMARY
           echo '```bash' >> $GITHUB_STEP_SUMMARY
-          echo "docker pull ${{ env.IMAGE_NAME }}:${PR_TAG}" >> $GITHUB_STEP_SUMMARY
-          echo "docker run -p 8080:80 ${{ env.IMAGE_NAME }}:${PR_TAG}" >> $GITHUB_STEP_SUMMARY
+          echo "docker pull ${IMAGE_NAME}:${PR_TAG}" >> $GITHUB_STEP_SUMMARY
+          echo "docker run -p 8080:80 ${IMAGE_NAME}:${PR_TAG}" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
         continue-on-error: true
 
       - name: Comment on PR
         if: github.event_name == 'pull_request'
         uses: actions/github-script@v7
+        env:
+          IMAGE_NAME: ${{ steps.image.outputs.name }}
+          CREDS_AVAILABLE: ${{ steps.check_creds.outputs.available }}
         with:
           script: |
             const prNumber = context.payload.pull_request.number;
             const prTag = `pr-${prNumber}`;
             const imageName = process.env.IMAGE_NAME;
+            const credsAvailable = process.env.CREDS_AVAILABLE === 'true';
 
-            const comment = `## 🐳 Docker Build Successful
+            let comment = `## 🐳 Docker Build Successful
 
             Your PR has been built and tested successfully!
 
             **Test Results:** ✅ All tests passed
             **PR Tag:** \`${prTag}\`
 
-            ### Test the PR image locally:
+            `;
+
+            if (credsAvailable) {
+              comment += `### Test the PR image locally:
             \`\`\`bash
             docker pull ${imageName}:${prTag}
             docker run -p 8080:80 ${imageName}:${prTag}
@@ -294,6 +323,22 @@ jobs:
 
             **Note:** PR images are available for testing but are not published to the \`latest\` tag.
             `;
+            } else {
+              comment += `### Docker Hub Publishing
+
+            ⚠️ Docker Hub credentials are not configured for this repository.
+
+            To enable PR image publishing:
+            1. Add \`DOCKERHUB_USERNAME\` and \`DOCKERHUB_TOKEN\` to repository secrets
+            2. PR images will be automatically published for testing
+
+            You can still test locally by building the Dockerfile:
+            \`\`\`bash
+            docker build -t ${prTag} .
+            docker run -p 8080:80 ${prTag}
+            \`\`\`
+            `;
+            }
 
             // Find existing comment
             const { data: comments } = await github.rest.issues.listComments({
