@@ -224,7 +224,7 @@ export const ProjectSelection = ({
 
               <Button
                 onClick={handleContinue}
-                className="w-full mt-6 h-12 text-base"
+                className="w-full mt-6 min-h-12 py-3 text-sm sm:text-base whitespace-normal"
                 disabled={selectedProjects.length === 0}
               >
                 {t("projects.continueToAlert", {
