@@ -12,6 +12,8 @@ interface SearchBarProps {
   onSearch: () => void;
   onClearSearch: () => void;
   onRecentSearchClick: (search: string) => void;
+  /** If true, uses absolute positioning (for desktop). If false, uses relative positioning (for modals). */
+  standalone?: boolean;
 }
 
 export const SearchBar = ({
@@ -23,12 +25,21 @@ export const SearchBar = ({
   onSearch,
   onClearSearch,
   onRecentSearchClick,
+  standalone = true,
 }: SearchBarProps) => {
   const { t } = useTranslation();
 
+  const containerClasses = standalone
+    ? "absolute top-20 left-4 right-4 z-10 md:left-6 md:right-auto md:w-80"
+    : "";
+
+  const contentClasses = standalone
+    ? "bg-white/95 backdrop-blur-sm rounded-2xl shadow-lg p-4 space-y-3"
+    : "space-y-3";
+
   return (
-    <div className="absolute top-20 left-4 right-4 z-10 md:left-6 md:right-auto md:w-80">
-      <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-lg p-4 space-y-3">
+    <div className={containerClasses}>
+      <div className={contentClasses}>
         <div className="flex items-center gap-3">
           <Search className="w-5 h-5 text-gray-500 flex-shrink-0" />
           <Input

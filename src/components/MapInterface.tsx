@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { LogOut, Settings, Download } from "lucide-react";
+import { LogOut, Settings, Download, Search } from "lucide-react";
 import { toast } from "sonner";
 import { usePWAInstall } from "@/hooks/usePWAInstall";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { AlertPopup } from "@/components/AlertPopup";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { MapTokenSetup } from "@/components/MapTokenSetup";
@@ -11,6 +12,7 @@ import { CoordinateDisplay } from "@/components/CoordinateDisplay";
 import { ManualCoordinateEntry } from "@/components/ManualCoordinateEntry";
 import { MapContainer } from "@/components/MapContainer";
 import { ProjectSelector } from "@/components/ProjectSelector";
+import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { useMapAlerts } from "@/hooks/useMapAlerts";
 import { useMapSearch } from "@/hooks/useMapSearch";
 import { useMapInteraction } from "@/hooks/useMapInteraction";
@@ -33,6 +35,11 @@ interface MapInterfaceProps {
   isLoadingProjects?: boolean;
 }
 
+// Navbar height constants for consistent positioning
+const NAVBAR_HEIGHT_MOBILE = 56; // Approximate height on mobile (py-2 + safe-area)
+const NAVBAR_HEIGHT_DESKTOP = 64; // Approximate height on desktop (py-3)
+const BUTTON_TOP_OFFSET = 16; // Gap between navbar and floating buttons
+
 export const MapInterface = ({
   onCoordinatesSet,
   onLogout,
@@ -42,10 +49,12 @@ export const MapInterface = ({
   isLoadingProjects = false,
 }: MapInterfaceProps) => {
   const { t } = useTranslation();
+  const isMobile = useIsMobile();
   const [selectedCoords, setSelectedCoords] = useState<Coordinates | null>(
     coordinates,
   );
   const [showManualEntry, setShowManualEntry] = useState(false);
+  const [showSearchModal, setShowSearchModal] = useState(false);
   // Initialize mapboxToken directly from environment to avoid async timing issues
   const [mapboxToken, setMapboxToken] = useState(() => {
     const envToken = import.meta.env.VITE_MAPBOX_TOKEN;
@@ -65,6 +74,11 @@ export const MapInterface = ({
   const projectInitializedRef = useRef(false);
 
   const { isInstallable, installApp } = usePWAInstall();
+
+  // Calculate button positions based on navbar height
+  const floatingButtonTop = isMobile
+    ? NAVBAR_HEIGHT_MOBILE + BUTTON_TOP_OFFSET
+    : NAVBAR_HEIGHT_DESKTOP + BUTTON_TOP_OFFSET;
 
   // Initialize selected project when projects first load (only once)
   useEffect(() => {
@@ -137,6 +151,26 @@ export const MapInterface = ({
       cleanupMarkers();
     };
   }, [cleanupMarkers]);
+
+  // Adjust map padding on mobile when coordinates are selected to keep marker visible above bottom sheet
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map || !isMapLoaded) return;
+
+    if (isMobile && selectedCoords) {
+      // Add padding to bottom to account for bottom sheet (approximately 200px)
+      map.easeTo({
+        padding: { top: 0, bottom: 250, left: 0, right: 0 },
+        duration: 300,
+      });
+    } else if (isMobile && !selectedCoords) {
+      // Reset padding when coordinates are cleared
+      map.easeTo({
+        padding: { top: 0, bottom: 0, left: 0, right: 0 },
+        duration: 300,
+      });
+    }
+  }, [selectedCoords, isMobile, isMapLoaded]);
 
   const handleTokenSubmit = () => {
     setShowTokenInput(false);
@@ -227,19 +261,20 @@ export const MapInterface = ({
         searchInputRef={searchInputRef}
       />
 
-      {/* Mobile-optimized floating header with safe area */}
-      <div className="absolute top-0 left-0 right-0 z-10 bg-white/95 backdrop-blur-sm border-b border-gray-200">
+      {/* Single-row navbar with safe area */}
+      <div className="absolute top-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-sm border-b border-gray-200">
         <div
-          className="flex justify-between items-center px-4 py-3 h-16"
-          style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}
+          className="flex justify-between items-center px-2 sm:px-4 py-2 sm:py-3"
+          style={{ paddingTop: "max(0.5rem, env(safe-area-inset-top))" }}
         >
-          <div className="flex items-center gap-3 flex-1 min-w-0">
-            <h1 className="text-lg font-bold text-gray-800 hidden md:block">
-              {t("app.title")}
-            </h1>
-            <h1 className="text-sm font-bold text-gray-800 md:hidden truncate">
-              {t("app.title")}
-            </h1>
+          <div className="flex items-center gap-1.5 sm:gap-3 flex-1 min-w-0">
+            {/* App logo - hidden on very small screens */}
+            <img
+              src="/icon.svg"
+              alt="CoMapeo Logo"
+              className="hidden xs:block w-8 h-8 flex-shrink-0"
+            />
+            {/* Project selector - shows selected project name */}
             <ProjectSelector
               projects={projects}
               selectedProject={selectedProject}
@@ -247,14 +282,14 @@ export const MapInterface = ({
               isLoading={isLoadingProjects || isLoadingAlerts}
             />
           </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
             <LanguageSwitcher />
             {isInstallable && (
               <Button
                 variant="outline"
                 size="sm"
                 onClick={installApp}
-                className="flex items-center gap-1 h-11 min-w-[44px]"
+                className="flex items-center gap-1 h-9 sm:h-11 min-w-[44px]"
                 aria-label={t("common.installApp")}
               >
                 <Download className="w-4 h-4" />
@@ -265,7 +300,7 @@ export const MapInterface = ({
               variant="outline"
               size="sm"
               onClick={onLogout}
-              className="flex items-center gap-1 h-11 min-w-[44px]"
+              className="flex items-center gap-1 h-9 sm:h-11 min-w-[44px]"
               aria-label={t("projects.logout")}
             >
               <LogOut className="w-4 h-4" />
@@ -275,30 +310,73 @@ export const MapInterface = ({
         </div>
       </div>
 
-      {/* Enhanced search bar with recent searches */}
-      <SearchBar
-        searchQuery={searchQuery}
-        setSearchQuery={setSearchQuery}
-        isSearching={isSearching}
-        recentSearches={recentSearches}
-        searchInputRef={searchInputRef}
-        onSearch={handleSearch}
-        onClearSearch={handleClearSearch}
-        onRecentSearchClick={handleRecentSearchClick}
-      />
+      {/* Search UI - Different on mobile vs desktop */}
+      {isMobile ? (
+        /* Mobile: Compact search trigger button */
+        <div className="absolute left-2 sm:left-4 z-20" style={{ top: `${floatingButtonTop}px` }}>
+          <Button
+            onClick={() => setShowSearchModal(true)}
+            className="w-12 h-12 rounded-full bg-white/95 backdrop-blur-sm shadow-lg hover:bg-white border border-gray-200"
+            aria-label="Open search"
+          >
+            <Search className="w-5 h-5 text-gray-700" />
+          </Button>
+        </div>
+      ) : (
+        /* Desktop: Full search bar always visible */
+        <SearchBar
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          isSearching={isSearching}
+          recentSearches={recentSearches}
+          searchInputRef={searchInputRef}
+          onSearch={handleSearch}
+          onClearSearch={handleClearSearch}
+          onRecentSearchClick={handleRecentSearchClick}
+        />
+      )}
 
-      {/* Mobile FAB for manual entry - larger touch target */}
-      <div className="absolute top-36 right-4 z-10 md:top-24">
+      {/* Mobile: Search bottom sheet */}
+      {isMobile && (
+        <BottomSheet
+          isOpen={showSearchModal}
+          onClose={() => setShowSearchModal(false)}
+          title={t("map.searchPlaceholder")}
+        >
+          <SearchBar
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            isSearching={isSearching}
+            recentSearches={recentSearches}
+            searchInputRef={searchInputRef}
+            onSearch={() => {
+              handleSearch();
+              setShowSearchModal(false);
+            }}
+            onClearSearch={handleClearSearch}
+            onRecentSearchClick={(search) => {
+              handleRecentSearchClick(search);
+              setShowSearchModal(false);
+            }}
+            standalone={false}
+          />
+        </BottomSheet>
+      )}
+
+      {/* Floating map controls - vertically stacked on right side */}
+      <div className="absolute right-2 sm:right-4 z-10 flex flex-col gap-3" style={{ top: `${floatingButtonTop}px` }}>
+        {/* Manual coordinate entry button */}
         <Button
           onClick={() => setShowManualEntry(true)}
-          className="w-14 h-14 rounded-full bg-blue-600 hover:bg-blue-700 shadow-lg md:w-auto md:h-auto md:rounded-lg md:px-4 md:py-2"
+          className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-blue-600 hover:bg-blue-700 shadow-lg md:w-auto md:h-auto md:rounded-lg md:px-4 md:py-2"
           aria-label="Manual coordinate entry"
         >
-          <Settings className="w-6 h-6 md:w-4 md:h-4" />
+          <Settings className="w-5 h-5 sm:w-6 sm:h-6 md:w-4 md:h-4" />
           <span className="hidden md:inline md:ml-2">
             {t("map.manualEntry")}
           </span>
         </Button>
+        {/* Add more map controls here in the future if needed */}
       </div>
 
       {/* Enhanced bottom sheet for manual entry */}
