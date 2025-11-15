@@ -268,10 +268,12 @@ export const MapInterface = ({
           style={{ paddingTop: "max(0.5rem, env(safe-area-inset-top))" }}
         >
           <div className="flex items-center gap-1.5 sm:gap-3 flex-1 min-w-0">
-            {/* App icon - hidden on very small screens */}
-            <div className="hidden xs:flex w-8 h-8 bg-blue-600 rounded-lg items-center justify-center flex-shrink-0">
-              <span className="text-white text-xs font-bold">CM</span>
-            </div>
+            {/* App logo - hidden on very small screens */}
+            <img
+              src="/icon.svg"
+              alt="CoMapeo Logo"
+              className="hidden xs:block w-8 h-8 flex-shrink-0"
+            />
             {/* Project selector - shows selected project name */}
             <ProjectSelector
               projects={projects}
