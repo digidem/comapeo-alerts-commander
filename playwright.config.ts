@@ -96,11 +96,26 @@ export default defineConfig({
   ],
 
   /* Run your local dev server before starting the tests */
-  webServer: {
-    command: 'npm run preview',
+  // webServer can automatically start your dev server
+  // Uncomment and configure based on your needs:
+  // Option 1: Use preview server (requires 'npm run build' first)
+  // Option 2: Use dev server (no build required)
+  // Option 3: Comment out and run server manually
+
+  webServer: process.env.SKIP_WEBSERVER ? undefined : {
+    // For preview mode (production build)
+    // command: 'npm run preview',
+
+    // For dev mode (recommended for development)
+    command: 'npm run dev',
+
     url: 'http://localhost:8080',
     reuseExistingServer: !process.env.CI,
     timeout: 120 * 1000,
+
+    // Print server output for debugging
+    stdout: 'pipe',
+    stderr: 'pipe',
   },
 
   /* Global timeout for each test */
