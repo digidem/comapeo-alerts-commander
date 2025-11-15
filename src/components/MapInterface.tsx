@@ -160,7 +160,7 @@ export const MapInterface = ({
         duration: 300,
       });
     }
-  }, [selectedCoords, isMobile, isMapLoaded, mapInstanceRef]);
+  }, [selectedCoords, isMobile, isMapLoaded]);
 
   const handleTokenSubmit = () => {
     setShowTokenInput(false);
