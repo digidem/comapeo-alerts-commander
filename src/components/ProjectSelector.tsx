@@ -48,10 +48,10 @@ export const ProjectSelector = ({
           variant="outline"
           size="sm"
           disabled={isLoading}
-          className="flex items-center gap-1 h-11 min-w-[44px] max-w-[200px] md:max-w-none"
+          className="flex items-center gap-1 sm:gap-1.5 h-9 sm:h-11 min-w-[44px] flex-1 max-w-[280px] sm:max-w-[320px] md:max-w-none md:flex-none"
         >
-          <FolderOpen className="w-4 h-4 flex-shrink-0" />
-          <span className="hidden sm:inline truncate">
+          <FolderOpen className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
+          <span className="truncate text-xs sm:text-sm font-medium">
             {selectedProject?.name || t("projects.selectProject")}
           </span>
           <ChevronDown className="w-3 h-3 flex-shrink-0" />

@@ -251,45 +251,33 @@ export const MapInterface = ({
         searchInputRef={searchInputRef}
       />
 
-      {/* Mobile-optimized floating header with safe area */}
+      {/* Single-row navbar with safe area */}
       <div className="absolute top-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-sm border-b border-gray-200">
         <div
-          className="flex justify-between items-center px-4 py-3 h-16"
-          style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}
+          className="flex justify-between items-center px-2 sm:px-4 py-2 sm:py-3"
+          style={{ paddingTop: "max(0.5rem, env(safe-area-inset-top))" }}
         >
-          <div className="flex items-center gap-3 flex-1 min-w-0">
-            {/* App icon placeholder - you can replace with actual logo */}
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-3 flex-1 min-w-0">
+            {/* App icon - hidden on very small screens */}
+            <div className="hidden xs:flex w-8 h-8 bg-blue-600 rounded-lg items-center justify-center flex-shrink-0">
               <span className="text-white text-xs font-bold">CM</span>
             </div>
-            {/* Show project name on mobile, app title on desktop */}
-            {selectedProject ? (
-              <h1 className="text-base font-bold text-gray-800 truncate md:text-lg">
-                {selectedProject.name}
-              </h1>
-            ) : (
-              <h1 className="text-base font-bold text-gray-800 truncate md:text-lg">
-                {t("app.title")}
-              </h1>
-            )}
-            {/* Desktop only: Project selector */}
-            <div className="hidden md:flex">
-              <ProjectSelector
-                projects={projects}
-                selectedProject={selectedProject}
-                onProjectSelect={handleProjectSelect}
-                isLoading={isLoadingProjects || isLoadingAlerts}
-              />
-            </div>
+            {/* Project selector - shows selected project name */}
+            <ProjectSelector
+              projects={projects}
+              selectedProject={selectedProject}
+              onProjectSelect={handleProjectSelect}
+              isLoading={isLoadingProjects || isLoadingAlerts}
+            />
           </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
             <LanguageSwitcher />
             {isInstallable && (
               <Button
                 variant="outline"
                 size="sm"
                 onClick={installApp}
-                className="flex items-center gap-1 h-11 min-w-[44px]"
+                className="flex items-center gap-1 h-9 sm:h-11 min-w-[44px]"
                 aria-label={t("common.installApp")}
               >
                 <Download className="w-4 h-4" />
@@ -300,7 +288,7 @@ export const MapInterface = ({
               variant="outline"
               size="sm"
               onClick={onLogout}
-              className="flex items-center gap-1 h-11 min-w-[44px]"
+              className="flex items-center gap-1 h-9 sm:h-11 min-w-[44px]"
               aria-label={t("projects.logout")}
             >
               <LogOut className="w-4 h-4" />
@@ -308,21 +296,12 @@ export const MapInterface = ({
             </Button>
           </div>
         </div>
-        {/* Mobile only: Project selector below header */}
-        <div className="md:hidden px-4 pb-3">
-          <ProjectSelector
-            projects={projects}
-            selectedProject={selectedProject}
-            onProjectSelect={handleProjectSelect}
-            isLoading={isLoadingProjects || isLoadingAlerts}
-          />
-        </div>
       </div>
 
       {/* Search UI - Different on mobile vs desktop */}
       {isMobile ? (
         /* Mobile: Compact search trigger button */
-        <div className="absolute top-20 left-4 z-20">
+        <div className="absolute left-2 sm:left-4 z-20" style={{ top: '60px' }}>
           <Button
             onClick={() => setShowSearchModal(true)}
             className="w-12 h-12 rounded-full bg-white/95 backdrop-blur-sm shadow-lg hover:bg-white border border-gray-200"
@@ -373,14 +352,14 @@ export const MapInterface = ({
       )}
 
       {/* Floating map controls - vertically stacked on right side */}
-      <div className="absolute right-4 z-10 flex flex-col gap-3" style={{ top: isMobile ? '140px' : '96px' }}>
+      <div className="absolute right-2 sm:right-4 z-10 flex flex-col gap-3" style={{ top: isMobile ? '60px' : '80px' }}>
         {/* Manual coordinate entry button */}
         <Button
           onClick={() => setShowManualEntry(true)}
-          className="w-14 h-14 rounded-full bg-blue-600 hover:bg-blue-700 shadow-lg md:w-auto md:h-auto md:rounded-lg md:px-4 md:py-2"
+          className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-blue-600 hover:bg-blue-700 shadow-lg md:w-auto md:h-auto md:rounded-lg md:px-4 md:py-2"
           aria-label="Manual coordinate entry"
         >
-          <Settings className="w-6 h-6 md:w-4 md:h-4" />
+          <Settings className="w-5 h-5 sm:w-6 sm:h-6 md:w-4 md:h-4" />
           <span className="hidden md:inline md:ml-2">
             {t("map.manualEntry")}
           </span>
