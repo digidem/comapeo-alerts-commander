@@ -7,12 +7,19 @@ test.describe('User Authentication', () => {
 
   test.beforeEach(async ({ page }) => {
     // Each test gets a fresh browser context (clean storage) by default
-    // Navigate to the page
-    await page.goto('/', { waitUntil: 'load' });
+    // Navigate to the page using domcontentloaded to avoid browser crashes
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
+    // Wait for React to render
+    await page.waitForTimeout(1500);
     loginPage = new LoginPage(page);
   });
 
-  test('should display login form', async () => {
+  test('should display login form', async ({ page }) => {
+    // Debug: check what's on the page
+    const bodyText = await page.locator('body').innerText();
+    console.log('=== BODY TEXT ===');
+    console.log(bodyText.substring(0, 500));
+
     // Verify form elements are visible
     await expect(loginPage.serverNameInput).toBeVisible();
     await expect(loginPage.bearerTokenInput).toBeVisible();
