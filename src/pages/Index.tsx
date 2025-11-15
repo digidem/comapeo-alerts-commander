@@ -6,22 +6,7 @@ import { AlertForm } from "@/components/AlertForm";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { apiService } from "@/services/apiService";
-
-interface Credentials {
-  serverName: string;
-  bearerToken: string;
-  rememberMe: boolean;
-}
-
-interface Project {
-  projectId: string;
-  name: string;
-}
-
-interface Coordinates {
-  lat: number;
-  lng: number;
-}
+import { Credentials, Project, Coordinates } from "@/types/common";
 
 const Index = () => {
   const { t } = useTranslation();
@@ -68,11 +53,16 @@ const Index = () => {
     if (stored) {
       try {
         const parsed = JSON.parse(stored);
-        setCredentials(parsed);
+        // Ensure rememberMe is set (for backwards compatibility with old stored credentials)
+        const credentials: Credentials = {
+          ...parsed,
+          rememberMe: parsed.rememberMe ?? true, // Default to true for stored credentials
+        };
+        setCredentials(credentials);
         setIsAuthenticated(true);
         setCurrentStep("map");
         // Fetch projects immediately after restoring credentials
-        fetchProjects(parsed);
+        fetchProjects(credentials);
       } catch (error) {
         localStorage.removeItem("mapAlert_credentials");
       }

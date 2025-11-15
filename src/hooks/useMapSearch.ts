@@ -3,11 +3,7 @@ import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import mapboxgl from "mapbox-gl";
 import maplibregl from "maplibre-gl";
-
-interface Coordinates {
-  lat: number;
-  lng: number;
-}
+import { Coordinates } from "@/types/common";
 
 export const useMapSearch = (
   mapInstanceRef: React.MutableRefObject<mapboxgl.Map | maplibregl.Map | null>,

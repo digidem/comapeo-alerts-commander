@@ -5,11 +5,7 @@ import { Button } from "@/components/ui/button";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
-
-interface Coordinates {
-  lat: number;
-  lng: number;
-}
+import { Coordinates } from "@/types/common";
 
 interface ManualCoordinateEntryProps {
   isOpen: boolean;

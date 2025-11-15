@@ -8,11 +8,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ChevronDown, FolderOpen } from "lucide-react";
 import { useTranslation } from "react-i18next";
-
-interface Project {
-  projectId: string;
-  name: string;
-}
+import { Project } from "@/types/common";
 
 interface ProjectSelectorProps {
   projects: Project[];

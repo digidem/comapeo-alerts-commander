@@ -1,10 +1,6 @@
 import { useEffect, memo } from "react";
 import { useTranslation } from "react-i18next";
-
-interface Coordinates {
-  lat: number;
-  lng: number;
-}
+import { Coordinates } from "@/types/common";
 
 interface MapContainerProps {
   mapRef: React.RefObject<HTMLDivElement>;
