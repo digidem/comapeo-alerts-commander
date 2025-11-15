@@ -301,7 +301,7 @@ export const MapInterface = ({
       {/* Search UI - Different on mobile vs desktop */}
       {isMobile ? (
         /* Mobile: Compact search trigger button */
-        <div className="absolute left-2 sm:left-4 z-20" style={{ top: '60px' }}>
+        <div className="absolute left-2 sm:left-4 z-20" style={{ top: '72px' }}>
           <Button
             onClick={() => setShowSearchModal(true)}
             className="w-12 h-12 rounded-full bg-white/95 backdrop-blur-sm shadow-lg hover:bg-white border border-gray-200"
@@ -352,7 +352,7 @@ export const MapInterface = ({
       )}
 
       {/* Floating map controls - vertically stacked on right side */}
-      <div className="absolute right-2 sm:right-4 z-10 flex flex-col gap-3" style={{ top: isMobile ? '60px' : '80px' }}>
+      <div className="absolute right-2 sm:right-4 z-10 flex flex-col gap-3" style={{ top: isMobile ? '72px' : '80px' }}>
         {/* Manual coordinate entry button */}
         <Button
           onClick={() => setShowManualEntry(true)}
