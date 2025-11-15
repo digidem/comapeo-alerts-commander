@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { LogOut, Settings, Download } from "lucide-react";
 import { toast } from "sonner";
@@ -76,12 +76,13 @@ export const MapInterface = ({
     }
     return null;
   });
+  const projectInitializedRef = useRef(false);
 
   const { isInstallable, installApp } = usePWAInstall();
 
-  // Update selected project when projects list changes
+  // Initialize selected project when projects first load (only once)
   useEffect(() => {
-    if (projects.length > 0 && !selectedProject) {
+    if (projects.length > 0 && !projectInitializedRef.current) {
       const savedProjectId = localStorage.getItem("selectedProjectId");
       const savedProject = savedProjectId
         ? projects.find((p) => p.projectId === savedProjectId)
@@ -89,11 +90,10 @@ export const MapInterface = ({
 
       // Use saved project if found, otherwise default to first project
       const projectToSelect = savedProject || projects[0];
-      // Only set if we don't have a current selection
       setSelectedProject(projectToSelect);
+      projectInitializedRef.current = true;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projects.length]);
+  }, [projects]);
 
   // Save selected project to localStorage when it changes
   useEffect(() => {
