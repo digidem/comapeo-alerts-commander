@@ -1,4 +1,4 @@
-# Geo Alert Commander
+# CoMapeo Alerts Commander
 
 A Progressive Web App for creating and managing geographic alerts with interactive map integration. Built for the CoMapeo ecosystem, this application provides a mobile-first interface for field work and remote monitoring.
 
@@ -82,7 +82,7 @@ A Progressive Web App for creating and managing geographic alerts with interacti
 1. Clone the repository:
 ```bash
 git clone <repository-url>
-cd geo-alert-commander
+cd comapeo-alerts-commander
 ```
 
 2. Install dependencies:
@@ -207,7 +207,7 @@ For detailed instructions, see [ICONS.md](./ICONS.md)
 ## Project Structure
 
 ```
-geo-alert-commander/
+comapeo-alerts-commander/
 ├── public/                  # Static assets
 │   ├── icon.svg            # Source icon (replace with your logo)
 │   ├── icon-*.png          # Generated PWA icons (auto-generated)
@@ -314,14 +314,14 @@ This project uses GitHub Actions to automatically deploy to Cloudflare Pages.
 
 **PR Preview Deployments:**
 - Automatically created for every pull request
-- Each PR gets a unique preview URL: `https://pr-{number}.geo-alert-commander.pages.dev`
+- Each PR gets a unique preview URL: `https://pr-{number}.comapeo-alerts-commander.pages.dev`
 - Preview updates automatically when you push new commits
 - Comments on PR with deployment status and preview URL
 - Forks cannot trigger deployments (security measure)
 
 ### Quick Setup
 
-1. **Create a Cloudflare Pages project** named `geo-alert-commander`
+1. **Create a Cloudflare Pages project** named `comapeo-alerts-commander`
 2. **Get your Cloudflare credentials:**
    - Account ID (found in Cloudflare Dashboard)
    - API Token with `Cloudflare Pages:Edit` permission
