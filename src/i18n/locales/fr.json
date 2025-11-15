@@ -117,7 +117,8 @@
     "installApp": "Installer l'application",
     "go": "Aller",
     "and": "et",
-    "more": "plus"
+    "more": "plus",
+    "cancel": "Annuler"
   },
   "language": {
     "switchLanguage": "Changer de langue",

@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { LogOut, Settings, Download } from "lucide-react";
+import { LogOut, Settings, Download, Search } from "lucide-react";
 import { toast } from "sonner";
 import { usePWAInstall } from "@/hooks/usePWAInstall";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { AlertPopup } from "@/components/AlertPopup";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { MapTokenSetup } from "@/components/MapTokenSetup";
@@ -11,6 +12,7 @@ import { CoordinateDisplay } from "@/components/CoordinateDisplay";
 import { ManualCoordinateEntry } from "@/components/ManualCoordinateEntry";
 import { MapContainer } from "@/components/MapContainer";
 import { ProjectSelector } from "@/components/ProjectSelector";
+import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { useMapAlerts } from "@/hooks/useMapAlerts";
 import { useMapSearch } from "@/hooks/useMapSearch";
 import { useMapInteraction } from "@/hooks/useMapInteraction";
@@ -42,10 +44,12 @@ export const MapInterface = ({
   isLoadingProjects = false,
 }: MapInterfaceProps) => {
   const { t } = useTranslation();
+  const isMobile = useIsMobile();
   const [selectedCoords, setSelectedCoords] = useState<Coordinates | null>(
     coordinates,
   );
   const [showManualEntry, setShowManualEntry] = useState(false);
+  const [showSearchModal, setShowSearchModal] = useState(false);
   // Initialize mapboxToken directly from environment to avoid async timing issues
   const [mapboxToken, setMapboxToken] = useState(() => {
     const envToken = import.meta.env.VITE_MAPBOX_TOKEN;
@@ -138,6 +142,26 @@ export const MapInterface = ({
     };
   }, [cleanupMarkers]);
 
+  // Adjust map padding on mobile when coordinates are selected to keep marker visible above bottom sheet
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map || !isMapLoaded) return;
+
+    if (isMobile && selectedCoords) {
+      // Add padding to bottom to account for bottom sheet (approximately 200px)
+      map.easeTo({
+        padding: { top: 0, bottom: 250, left: 0, right: 0 },
+        duration: 300,
+      });
+    } else if (isMobile && !selectedCoords) {
+      // Reset padding when coordinates are cleared
+      map.easeTo({
+        padding: { top: 0, bottom: 0, left: 0, right: 0 },
+        duration: 300,
+      });
+    }
+  }, [selectedCoords, isMobile, isMapLoaded, mapInstanceRef]);
+
   const handleTokenSubmit = () => {
     setShowTokenInput(false);
   };
@@ -228,24 +252,35 @@ export const MapInterface = ({
       />
 
       {/* Mobile-optimized floating header with safe area */}
-      <div className="absolute top-0 left-0 right-0 z-10 bg-white/95 backdrop-blur-sm border-b border-gray-200">
+      <div className="absolute top-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-sm border-b border-gray-200">
         <div
           className="flex justify-between items-center px-4 py-3 h-16"
           style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}
         >
           <div className="flex items-center gap-3 flex-1 min-w-0">
-            <h1 className="text-lg font-bold text-gray-800 hidden md:block">
-              {t("app.title")}
-            </h1>
-            <h1 className="text-sm font-bold text-gray-800 md:hidden truncate">
-              {t("app.title")}
-            </h1>
-            <ProjectSelector
-              projects={projects}
-              selectedProject={selectedProject}
-              onProjectSelect={handleProjectSelect}
-              isLoading={isLoadingProjects || isLoadingAlerts}
-            />
+            {/* App icon placeholder - you can replace with actual logo */}
+            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
+              <span className="text-white text-xs font-bold">CM</span>
+            </div>
+            {/* Show project name on mobile, app title on desktop */}
+            {selectedProject ? (
+              <h1 className="text-base font-bold text-gray-800 truncate md:text-lg">
+                {selectedProject.name}
+              </h1>
+            ) : (
+              <h1 className="text-base font-bold text-gray-800 truncate md:text-lg">
+                {t("app.title")}
+              </h1>
+            )}
+            {/* Desktop only: Project selector */}
+            <div className="hidden md:flex">
+              <ProjectSelector
+                projects={projects}
+                selectedProject={selectedProject}
+                onProjectSelect={handleProjectSelect}
+                isLoading={isLoadingProjects || isLoadingAlerts}
+              />
+            </div>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
             <LanguageSwitcher />
@@ -273,22 +308,73 @@ export const MapInterface = ({
             </Button>
           </div>
         </div>
+        {/* Mobile only: Project selector below header */}
+        <div className="md:hidden px-4 pb-3">
+          <ProjectSelector
+            projects={projects}
+            selectedProject={selectedProject}
+            onProjectSelect={handleProjectSelect}
+            isLoading={isLoadingProjects || isLoadingAlerts}
+          />
+        </div>
       </div>
 
-      {/* Enhanced search bar with recent searches */}
-      <SearchBar
-        searchQuery={searchQuery}
-        setSearchQuery={setSearchQuery}
-        isSearching={isSearching}
-        recentSearches={recentSearches}
-        searchInputRef={searchInputRef}
-        onSearch={handleSearch}
-        onClearSearch={handleClearSearch}
-        onRecentSearchClick={handleRecentSearchClick}
-      />
+      {/* Search UI - Different on mobile vs desktop */}
+      {isMobile ? (
+        /* Mobile: Compact search trigger button */
+        <div className="absolute top-20 left-4 z-20">
+          <Button
+            onClick={() => setShowSearchModal(true)}
+            className="w-12 h-12 rounded-full bg-white/95 backdrop-blur-sm shadow-lg hover:bg-white border border-gray-200"
+            aria-label="Open search"
+          >
+            <Search className="w-5 h-5 text-gray-700" />
+          </Button>
+        </div>
+      ) : (
+        /* Desktop: Full search bar always visible */
+        <SearchBar
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          isSearching={isSearching}
+          recentSearches={recentSearches}
+          searchInputRef={searchInputRef}
+          onSearch={handleSearch}
+          onClearSearch={handleClearSearch}
+          onRecentSearchClick={handleRecentSearchClick}
+        />
+      )}
 
-      {/* Mobile FAB for manual entry - larger touch target */}
-      <div className="absolute top-36 right-4 z-10 md:top-24">
+      {/* Mobile: Search bottom sheet */}
+      {isMobile && (
+        <BottomSheet
+          isOpen={showSearchModal}
+          onClose={() => setShowSearchModal(false)}
+          title={t("map.searchPlaceholder")}
+        >
+          <SearchBar
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            isSearching={isSearching}
+            recentSearches={recentSearches}
+            searchInputRef={searchInputRef}
+            onSearch={() => {
+              handleSearch();
+              setShowSearchModal(false);
+            }}
+            onClearSearch={handleClearSearch}
+            onRecentSearchClick={(search) => {
+              handleRecentSearchClick(search);
+              setShowSearchModal(false);
+            }}
+            standalone={false}
+          />
+        </BottomSheet>
+      )}
+
+      {/* Floating map controls - vertically stacked on right side */}
+      <div className="absolute right-4 z-10 flex flex-col gap-3" style={{ top: isMobile ? '140px' : '96px' }}>
+        {/* Manual coordinate entry button */}
         <Button
           onClick={() => setShowManualEntry(true)}
           className="w-14 h-14 rounded-full bg-blue-600 hover:bg-blue-700 shadow-lg md:w-auto md:h-auto md:rounded-lg md:px-4 md:py-2"
@@ -299,6 +385,7 @@ export const MapInterface = ({
             {t("map.manualEntry")}
           </span>
         </Button>
+        {/* Add more map controls here in the future if needed */}
       </div>
 
       {/* Enhanced bottom sheet for manual entry */}
