@@ -53,11 +53,16 @@ const Index = () => {
     if (stored) {
       try {
         const parsed = JSON.parse(stored);
-        setCredentials(parsed);
+        // Ensure rememberMe is set (for backwards compatibility with old stored credentials)
+        const credentials: Credentials = {
+          ...parsed,
+          rememberMe: parsed.rememberMe ?? true, // Default to true for stored credentials
+        };
+        setCredentials(credentials);
         setIsAuthenticated(true);
         setCurrentStep("map");
         // Fetch projects immediately after restoring credentials
-        fetchProjects(parsed);
+        fetchProjects(credentials);
       } catch (error) {
         localStorage.removeItem("mapAlert_credentials");
       }

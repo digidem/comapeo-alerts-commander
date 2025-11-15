@@ -10,7 +10,7 @@
  *
  * @property serverName - The URL of the CoMapeo server (e.g., "https://api.example.com")
  * @property bearerToken - The authentication bearer token for API requests
- * @property rememberMe - Whether to persist credentials in localStorage (optional, defaults to false)
+ * @property rememberMe - Whether to persist credentials in localStorage
  */
 export interface Credentials {
   serverName: string;
