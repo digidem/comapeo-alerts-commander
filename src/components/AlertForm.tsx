@@ -7,12 +7,7 @@ import { ArrowLeft, Copy, CheckCircle, X, Loader } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { apiService } from "@/services/apiService";
-import { Credentials, Project } from "@/types/common";
-
-interface Coordinates {
-  lat: number;
-  lng: number;
-}
+import { Credentials, Project, Coordinates } from "@/types/common";
 
 interface AlertFormProps {
   coordinates: Coordinates;

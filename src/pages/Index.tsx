@@ -6,12 +6,7 @@ import { AlertForm } from "@/components/AlertForm";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { apiService } from "@/services/apiService";
-import { Credentials, Project } from "@/types/common";
-
-interface Coordinates {
-  lat: number;
-  lng: number;
-}
+import { Credentials, Project, Coordinates } from "@/types/common";
 
 const Index = () => {
   const { t } = useTranslation();

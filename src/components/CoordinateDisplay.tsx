@@ -1,11 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { MapPin, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
-
-interface Coordinates {
-  lat: number;
-  lng: number;
-}
+import { Coordinates } from "@/types/common";
 
 interface CoordinateDisplayProps {
   coordinates: Coordinates;

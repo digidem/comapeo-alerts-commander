@@ -19,12 +19,7 @@ import mapboxgl from "mapbox-gl";
 import maplibregl from "maplibre-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { Credentials, Project } from "@/types/common";
-
-interface Coordinates {
-  lat: number;
-  lng: number;
-}
+import { Credentials, Project, Coordinates } from "@/types/common";
 
 interface MapInterfaceProps {
   onCoordinatesSet: (
