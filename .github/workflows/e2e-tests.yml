@@ -1,0 +1,241 @@
+name: E2E Tests
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+  pull_request:
+    branches:
+      - main
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+  schedule:
+    # Run nightly at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      browser:
+        description: 'Browser to test (chromium, firefox, webkit, all)'
+        required: false
+        default: 'chromium'
+        type: choice
+        options:
+          - chromium
+          - firefox
+          - webkit
+          - all
+
+env:
+  TEST_SERVER_URL: https://demo.comapeo.cloud
+  CI: true
+
+jobs:
+  test:
+    name: Playwright E2E Tests
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, webkit]
+        shard: [1/3, 2/3, 3/3]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps ${{ matrix.browser }}
+
+      - name: Build application
+        run: npm run build
+        env:
+          VITE_MAPBOX_TOKEN: ${{ secrets.VITE_MAPBOX_TOKEN }}
+
+      - name: Run Playwright tests
+        run: npx playwright test --project=${{ matrix.browser }} --shard=${{ matrix.shard }}
+        env:
+          TEST_BEARER_TOKEN: ${{ secrets.TEST_BEARER_TOKEN }}
+          TEST_SERVER_URL: ${{ env.TEST_SERVER_URL }}
+          VITE_MAPBOX_TOKEN: ${{ secrets.VITE_MAPBOX_TOKEN }}
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-results-${{ matrix.browser }}-${{ strategy.job-index }}
+          path: test-results/
+          retention-days: 7
+          if-no-files-found: ignore
+
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ matrix.browser }}-${{ strategy.job-index }}
+          path: playwright-report/
+          retention-days: 30
+          if-no-files-found: ignore
+
+      - name: Upload videos on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-videos-${{ matrix.browser }}-${{ strategy.job-index }}
+          path: test-results/**/video.webm
+          retention-days: 7
+          if-no-files-found: ignore
+
+  merge-reports:
+    name: Merge Test Reports
+    if: always()
+    needs: test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download all reports
+        uses: actions/download-artifact@v4
+        with:
+          path: all-reports
+          pattern: playwright-report-*
+
+      - name: Merge reports
+        run: npx playwright merge-reports --reporter html ./all-reports
+
+      - name: Upload merged report
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-merged
+          path: playwright-report/
+          retention-days: 30
+
+      - name: Comment PR with test results
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+
+            // Read test results
+            let resultsPath = 'test-results/results.json';
+            if (!fs.existsSync(resultsPath)) {
+              console.log('No results file found');
+              return;
+            }
+
+            const results = JSON.parse(fs.readFileSync(resultsPath, 'utf8'));
+
+            const totalTests = results.stats.expected + results.stats.unexpected + results.stats.flaky;
+            const passed = results.stats.expected;
+            const failed = results.stats.unexpected;
+            const flaky = results.stats.flaky;
+
+            const comment = `## 🎭 E2E Test Results
+
+            **Total Tests:** ${totalTests}
+            **Passed:** ✅ ${passed}
+            **Failed:** ❌ ${failed}
+            **Flaky:** ⚠️ ${flaky}
+
+            **Duration:** ${Math.round(results.stats.duration / 1000)}s
+
+            ${failed > 0 ? '❌ Some tests failed. Please review the failures.' : '✅ All tests passed!'}
+
+            [View full report in artifacts](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            `;
+
+            // Find existing comment
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+            });
+
+            const botComment = comments.find(comment =>
+              comment.user.type === 'Bot' &&
+              comment.body.includes('🎭 E2E Test Results')
+            );
+
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: comment
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.pull_request.number,
+                body: comment
+              });
+            }
+
+  # Optional: Visual regression testing job
+  visual-regression:
+    name: Visual Regression Tests
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Build application
+        run: npm run build
+        env:
+          VITE_MAPBOX_TOKEN: ${{ secrets.VITE_MAPBOX_TOKEN }}
+
+      - name: Run visual regression tests
+        run: npx playwright test --grep @visual --project=chromium
+        env:
+          TEST_BEARER_TOKEN: ${{ secrets.TEST_BEARER_TOKEN }}
+          TEST_SERVER_URL: ${{ env.TEST_SERVER_URL }}
+
+      - name: Upload visual diffs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-regression-diffs
+          path: test-results/**/diff.png
+          retention-days: 7
