@@ -35,6 +35,11 @@ interface MapInterfaceProps {
   isLoadingProjects?: boolean;
 }
 
+// Navbar height constants for consistent positioning
+const NAVBAR_HEIGHT_MOBILE = 56; // Approximate height on mobile (py-2 + safe-area)
+const NAVBAR_HEIGHT_DESKTOP = 64; // Approximate height on desktop (py-3)
+const BUTTON_TOP_OFFSET = 16; // Gap between navbar and floating buttons
+
 export const MapInterface = ({
   onCoordinatesSet,
   onLogout,
@@ -69,6 +74,11 @@ export const MapInterface = ({
   const projectInitializedRef = useRef(false);
 
   const { isInstallable, installApp } = usePWAInstall();
+
+  // Calculate button positions based on navbar height
+  const floatingButtonTop = isMobile
+    ? NAVBAR_HEIGHT_MOBILE + BUTTON_TOP_OFFSET
+    : NAVBAR_HEIGHT_DESKTOP + BUTTON_TOP_OFFSET;
 
   // Initialize selected project when projects first load (only once)
   useEffect(() => {
@@ -301,7 +311,7 @@ export const MapInterface = ({
       {/* Search UI - Different on mobile vs desktop */}
       {isMobile ? (
         /* Mobile: Compact search trigger button */
-        <div className="absolute left-2 sm:left-4 z-20" style={{ top: '72px' }}>
+        <div className="absolute left-2 sm:left-4 z-20" style={{ top: `${floatingButtonTop}px` }}>
           <Button
             onClick={() => setShowSearchModal(true)}
             className="w-12 h-12 rounded-full bg-white/95 backdrop-blur-sm shadow-lg hover:bg-white border border-gray-200"
@@ -352,7 +362,7 @@ export const MapInterface = ({
       )}
 
       {/* Floating map controls - vertically stacked on right side */}
-      <div className="absolute right-2 sm:right-4 z-10 flex flex-col gap-3" style={{ top: isMobile ? '72px' : '80px' }}>
+      <div className="absolute right-2 sm:right-4 z-10 flex flex-col gap-3" style={{ top: `${floatingButtonTop}px` }}>
         {/* Manual coordinate entry button */}
         <Button
           onClick={() => setShowManualEntry(true)}
