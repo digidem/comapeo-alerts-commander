@@ -26,9 +26,8 @@ interface Coordinates {
 }
 
 interface Credentials {
-  serverUrl: string;
-  deviceId: string;
-  secretKey: string;
+  serverName: string;
+  bearerToken: string;
 }
 
 interface MapInterfaceProps {
