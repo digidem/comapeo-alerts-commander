@@ -7,20 +7,11 @@ import { ArrowLeft, Copy, CheckCircle, X, Loader } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { apiService } from "@/services/apiService";
+import { Credentials, Project } from "@/types/common";
 
 interface Coordinates {
   lat: number;
   lng: number;
-}
-
-interface Credentials {
-  serverName: string;
-  bearerToken: string;
-}
-
-interface Project {
-  projectId: string;
-  name: string;
 }
 
 interface AlertFormProps {

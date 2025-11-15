@@ -1,14 +1,5 @@
 import axios, { AxiosInstance, AxiosError } from "axios";
-
-interface Credentials {
-  serverName: string;
-  bearerToken: string;
-}
-
-interface Project {
-  projectId: string;
-  name: string;
-}
+import { Credentials, Project } from "@/types/common";
 
 interface AlertData {
   detectionDateStart: string;

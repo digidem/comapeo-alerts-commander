@@ -19,15 +19,11 @@ import mapboxgl from "mapbox-gl";
 import maplibregl from "maplibre-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import "maplibre-gl/dist/maplibre-gl.css";
+import { Credentials, Project } from "@/types/common";
 
 interface Coordinates {
   lat: number;
   lng: number;
-}
-
-interface Credentials {
-  serverName: string;
-  bearerToken: string;
 }
 
 interface MapInterfaceProps {
@@ -40,11 +36,6 @@ interface MapInterfaceProps {
   credentials?: Credentials;
   projects?: Project[];
   isLoadingProjects?: boolean;
-}
-
-interface Project {
-  projectId: string;
-  name: string;
 }
 
 export const MapInterface = ({

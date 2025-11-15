@@ -7,17 +7,7 @@ import { ArrowLeft, LogOut, FolderOpen } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { apiService } from "@/services/apiService";
-
-interface Credentials {
-  serverName: string;
-  bearerToken: string;
-  rememberMe: boolean;
-}
-
-interface Project {
-  projectId: string;
-  name: string;
-}
+import { Credentials, Project } from "@/types/common";
 
 interface ProjectSelectionProps {
   credentials: Credentials;

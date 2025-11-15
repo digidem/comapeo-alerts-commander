@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { apiService } from "@/services/apiService";
 import mapboxgl from "mapbox-gl";
 import maplibregl from "maplibre-gl";
+import { Credentials, Project } from "@/types/common";
 
 export interface MapAlert {
   id: string;
@@ -12,16 +13,6 @@ export interface MapAlert {
   detectionDateStart: string;
   detectionDateEnd: string;
   sourceId: string;
-}
-
-interface Credentials {
-  serverName: string;
-  bearerToken: string;
-}
-
-interface Project {
-  projectId: string;
-  name: string;
 }
 
 export const useMapAlerts = (
