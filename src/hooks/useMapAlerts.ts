@@ -217,10 +217,10 @@ export const useMapAlerts = (
   }, [alerts, addAlertMarkers, mapInstanceRef]);
 
   // Clean up markers when component unmounts
-  const cleanupMarkers = () => {
+  const cleanupMarkers = useCallback(() => {
     alertMarkersRef.current.forEach((marker) => marker.remove());
     alertMarkersRef.current = [];
-  };
+  }, []);
 
   return {
     alerts,
