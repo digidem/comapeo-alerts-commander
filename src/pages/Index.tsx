@@ -56,8 +56,11 @@ const Index = () => {
         setIsLoadingProjects(false);
       }
     },
-    [t],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
   );
+  // Note: 't' is intentionally excluded to prevent effect re-run on language change
+  // The error message will use whatever language is active when the error occurs
 
   useEffect(() => {
     // Check for stored credentials
