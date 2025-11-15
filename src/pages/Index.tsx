@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { LoginForm } from "@/components/LoginForm";
 import { MapInterface } from "@/components/MapInterface";
 import { ProjectSelection } from "@/components/ProjectSelection";
@@ -38,23 +38,26 @@ const Index = () => {
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
 
   // Function to fetch projects
-  const fetchProjects = async (creds: Credentials) => {
-    setIsLoadingProjects(true);
-    try {
-      const fetchedProjects = await apiService.fetchProjects(creds);
-      setProjects(fetchedProjects);
-      console.log(
-        `Fetched ${fetchedProjects.length} projects for MapInterface`,
-      );
-    } catch (error) {
-      console.error("Error fetching projects:", error);
-      toast.error(t("projects.failedToFetch"));
-      // Don't prevent navigation to map, just show empty projects
-      setProjects([]);
-    } finally {
-      setIsLoadingProjects(false);
-    }
-  };
+  const fetchProjects = useCallback(
+    async (creds: Credentials) => {
+      setIsLoadingProjects(true);
+      try {
+        const fetchedProjects = await apiService.fetchProjects(creds);
+        setProjects(fetchedProjects);
+        console.log(
+          `Fetched ${fetchedProjects.length} projects for MapInterface`,
+        );
+      } catch (error) {
+        console.error("Error fetching projects:", error);
+        toast.error(t("projects.failedToFetch"));
+        // Don't prevent navigation to map, just show empty projects
+        setProjects([]);
+      } finally {
+        setIsLoadingProjects(false);
+      }
+    },
+    [t],
+  );
 
   useEffect(() => {
     // Check for stored credentials
@@ -71,7 +74,7 @@ const Index = () => {
         localStorage.removeItem("mapAlert_credentials");
       }
     }
-  }, []);
+  }, [fetchProjects]);
 
   const handleLogin = async (creds: Credentials) => {
     setCredentials(creds);

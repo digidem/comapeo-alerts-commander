@@ -53,7 +53,7 @@ export const useMapInteraction = (
         }),
       );
     },
-    [onCoordinatesChange], // Removed 't' to prevent map re-render on language change
+    [onCoordinatesChange, t],
   );
 
   // Initialize map only once
@@ -133,7 +133,7 @@ export const useMapInteraction = (
         toast.error(t("map.mapConfigError"));
       });
 
-      map.on("click", handleMapClick as any);
+      map.on("click", handleMapClick);
 
       mapInstanceRef.current = map;
       initializedRef.current = true;
@@ -149,7 +149,7 @@ export const useMapInteraction = (
       console.error("Failed to initialize map:", error);
       toast.error(t("map.mapConfigError"));
     }
-  }, [mapboxToken, handleMapClick]); // Removed 't' to prevent map re-render on language change
+  }, [mapboxToken, handleMapClick, selectedCoords, t]);
 
   // Update marker when selectedCoords changes (without recreating map)
   useEffect(() => {
@@ -170,7 +170,7 @@ export const useMapInteraction = (
         color: "#ef4444",
       })
         .setLngLat([selectedCoords.lng, selectedCoords.lat])
-        .addTo(map as any);
+        .addTo(map);
     } else {
       // Remove marker if no coordinates
       if (markerRef.current) {

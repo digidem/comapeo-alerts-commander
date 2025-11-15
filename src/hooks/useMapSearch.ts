@@ -10,7 +10,7 @@ interface Coordinates {
 }
 
 export const useMapSearch = (
-  mapInstance: mapboxgl.Map | maplibregl.Map | null,
+  mapInstanceRef: React.MutableRefObject<mapboxgl.Map | maplibregl.Map | null>,
   markerRef: React.MutableRefObject<
     mapboxgl.Marker | maplibregl.Marker | null
   >,
@@ -107,16 +107,16 @@ export const useMapSearch = (
       saveRecentSearch(searchQuery);
 
       // Update map center and marker
-      if (mapInstance) {
+      if (mapInstanceRef.current) {
         // Only auto-zoom if enabled
         if (options.autoZoom) {
-          mapInstance.flyTo({
+          mapInstanceRef.current.flyTo({
             center: [lng, lat],
             zoom: 10,
           });
         } else {
           // Just center the map without changing zoom
-          mapInstance.setCenter([lng, lat]);
+          mapInstanceRef.current.setCenter([lng, lat]);
         }
 
         if (markerRef.current) {
@@ -131,7 +131,7 @@ export const useMapSearch = (
           color: "#ef4444",
         })
           .setLngLat([lng, lat])
-          .addTo(mapInstance as any);
+          .addTo(mapInstanceRef.current);
       }
 
       toast.success(
