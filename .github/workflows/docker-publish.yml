@@ -1,0 +1,133 @@
+name: Build and Publish Docker Image
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*.*.*'
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+  pull_request:
+    branches:
+      - main
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+  workflow_dispatch:
+    inputs:
+      push_image:
+        description: 'Push image to Docker Hub'
+        required: true
+        default: true
+        type: boolean
+
+env:
+  REGISTRY: docker.io
+  IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/comapeo-alerts-commander
+
+jobs:
+  build:
+    name: Build and Push Docker Image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_NAME }}
+          tags: |
+            # Tag as 'latest' on main branch
+            type=raw,value=latest,enable={{is_default_branch}}
+            # Tag with version on tags (e.g., v1.2.3 -> 1.2.3)
+            type=semver,pattern={{version}}
+            # Tag with major.minor on tags (e.g., v1.2.3 -> 1.2)
+            type=semver,pattern={{major}}.{{minor}}
+            # Tag with major on tags (e.g., v1.2.3 -> 1)
+            type=semver,pattern={{major}}
+            # Tag with branch name
+            type=ref,event=branch
+            # Tag with PR number for pull requests
+            type=ref,event=pr
+            # Tag with commit SHA (short)
+            type=sha,prefix={{branch}}-,format=short
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: ${{ github.event_name != 'pull_request' && (github.event.inputs.push_image != 'false') }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            NODE_ENV=production
+
+      - name: Generate build summary
+        run: |
+          echo "## 🐳 Docker Build Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Event:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Docker Image Tags:**" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "${{ steps.meta.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            echo "**Image pushed to Docker Hub:** ✅" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Pull command:**" >> $GITHUB_STEP_SUMMARY
+            echo '```bash' >> $GITHUB_STEP_SUMMARY
+            echo "docker pull ${{ env.IMAGE_NAME }}:latest" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Run command:**" >> $GITHUB_STEP_SUMMARY
+            echo '```bash' >> $GITHUB_STEP_SUMMARY
+            echo "docker run -p 8080:80 ${{ env.IMAGE_NAME }}:latest" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          else
+            echo "**Image pushed to Docker Hub:** ❌ (PR build only)" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Test Docker image
+        if: github.event_name != 'pull_request'
+        run: |
+          echo "Testing Docker image..."
+          # Pull the latest built image
+          docker pull ${{ env.IMAGE_NAME }}:${{ github.ref_name }}-${{ github.sha }}
+          # Run the container
+          docker run -d -p 8080:80 --name test-container ${{ env.IMAGE_NAME }}:${{ github.ref_name }}-${{ github.sha }}
+          # Wait for container to start
+          sleep 5
+          # Test health endpoint
+          curl -f http://localhost:8080/health || exit 1
+          # Test main page
+          curl -f http://localhost:8080/ || exit 1
+          # Stop and remove container
+          docker stop test-container
+          docker rm test-container
+          echo "✅ Docker image test passed!"

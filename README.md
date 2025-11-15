@@ -301,6 +301,81 @@ Typical production bundle breakdown:
 3. **Install as PWA** - Native-like performance on mobile devices
 4. **Clear old caches** - Service worker auto-updates with new versions
 
+## Docker
+
+This project includes Docker support for easy containerization and deployment.
+
+### Using Pre-built Images
+
+Pull and run the latest image from Docker Hub:
+
+```bash
+# Pull the latest image
+docker pull <dockerhub-username>/comapeo-alerts-commander:latest
+
+# Run the container
+docker run -p 8080:80 <dockerhub-username>/comapeo-alerts-commander:latest
+```
+
+The application will be available at `http://localhost:8080`
+
+### Building Locally
+
+Build the Docker image from source:
+
+```bash
+# Build the image
+docker build -t comapeo-alerts-commander .
+
+# Run the container
+docker run -p 8080:80 comapeo-alerts-commander
+```
+
+### Docker Compose (Optional)
+
+Create a `docker-compose.yml` file for easier management:
+
+```yaml
+version: '3.8'
+services:
+  web:
+    image: <dockerhub-username>/comapeo-alerts-commander:latest
+    ports:
+      - "8080:80"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+```
+
+Then run:
+
+```bash
+docker-compose up -d
+```
+
+### Available Tags
+
+- `latest` - Latest build from main branch
+- `v1.x.x` - Specific version tags (semantic versioning)
+- `main` - Latest main branch build
+- `main-<commit>` - Specific commit from main branch
+
+### Multi-Platform Support
+
+The Docker images are built for multiple architectures:
+- `linux/amd64` - Standard x86_64 architecture
+- `linux/arm64` - ARM64 architecture (Apple Silicon, AWS Graviton, etc.)
+
+### Automated Builds
+
+Docker images are automatically built and published to Docker Hub via GitHub Actions:
+- **On push to main**: Builds and tags as `latest` and `main-<commit>`
+- **On version tags**: Builds and tags with semantic versions (e.g., `v1.2.3`, `1.2`, `1`)
+- **On pull requests**: Builds but doesn't push (validation only)
+
 ## Deployment
 
 This project uses GitHub Actions to automatically deploy to Cloudflare Pages.
