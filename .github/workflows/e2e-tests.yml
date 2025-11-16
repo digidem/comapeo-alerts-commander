@@ -225,13 +225,18 @@ jobs:
               });
             }
 
-  # Optional: Visual regression testing job
-  # Currently disabled - no @visual tests implemented yet
-  # TODO: Re-enable once visual regression tests are added
+  # Visual regression testing job
+  # Tests visual consistency across browsers and viewports
   visual-regression:
     name: Visual Regression Tests
     runs-on: ubuntu-latest
-    if: false  # Disabled until @visual tests are implemented
+    if: always()  # Run even if E2E tests fail
+    needs: test
+
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, webkit]
 
     steps:
       - name: Checkout code
@@ -247,7 +252,7 @@ jobs:
         run: npm ci
 
       - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install --with-deps ${{ matrix.browser }}
 
       - name: Build application
         run: npm run build
@@ -255,17 +260,45 @@ jobs:
           VITE_MAPBOX_TOKEN: ${{ secrets.VITE_MAPBOX_TOKEN }}
 
       - name: Run visual regression tests
-        run: npx playwright test --grep @visual --project=chromium
-        continue-on-error: true  # Don't fail if no tests found
+        run: npx playwright test --grep @visual --project=${{ matrix.browser }}
+        continue-on-error: false  # Fail if visual tests fail
         env:
           TEST_BEARER_TOKEN: ${{ secrets.TEST_BEARER_TOKEN }}
           TEST_SERVER_URL: ${{ env.TEST_SERVER_URL }}
+          VITE_MAPBOX_TOKEN: ${{ secrets.VITE_MAPBOX_TOKEN }}
 
-      - name: Upload visual diffs
+      - name: Upload visual test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-test-results-${{ matrix.browser }}
+          path: test-results/
+          retention-days: 7
+          if-no-files-found: ignore
+
+      - name: Upload visual diffs on failure
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: visual-regression-diffs
-          path: test-results/**/diff.png
+          name: visual-regression-diffs-${{ matrix.browser }}
+          path: test-results/**/*-diff.png
+          retention-days: 30
+          if-no-files-found: ignore
+
+      - name: Upload actual screenshots on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-regression-actual-${{ matrix.browser }}
+          path: test-results/**/*-actual.png
           retention-days: 7
+          if-no-files-found: ignore
+
+      - name: Upload baseline snapshots
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-snapshots-${{ matrix.browser }}
+          path: tests/**/*.png
+          retention-days: 90
           if-no-files-found: ignore

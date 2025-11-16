@@ -22,6 +22,11 @@
     "test:e2e:firefox": "playwright test --project=firefox",
     "test:e2e:webkit": "playwright test --project=webkit",
     "test:e2e:report": "playwright show-report",
+    "test:visual": "playwright test --grep @visual",
+    "test:visual:update": "playwright test --grep @visual --update-snapshots",
+    "test:visual:chromium": "playwright test --grep @visual --project=chromium",
+    "test:visual:firefox": "playwright test --grep @visual --project=firefox",
+    "test:visual:webkit": "playwright test --grep @visual --project=webkit",
     "prepare": "husky"
   },
   "dependencies": {
