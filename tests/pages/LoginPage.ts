@@ -89,8 +89,8 @@ export class LoginPage extends BasePage {
    * Wait for login to complete successfully
    */
   async waitForLoginSuccess() {
-    // Wait for navigation to map page
-    await this.page.waitForURL(/\/(map|index)?$/, { timeout: 10000 });
+    // Wait for navigation to map page (require /map or /index, not just /)
+    await this.page.waitForURL(/\/(map|index)$/, { timeout: 10000 });
   }
 
   /**
@@ -99,8 +99,8 @@ export class LoginPage extends BasePage {
 
   async expectLoginSuccess() {
     await this.waitForLoginSuccess();
-    // Verify we're on the map page
-    await this.expectURL(/\/(map|index)?$/);
+    // Verify we're on the map page (require /map or /index, not just /)
+    await this.expectURL(/\/(map|index)$/);
   }
 
   async expectLoginError(expectedMessage?: string) {
