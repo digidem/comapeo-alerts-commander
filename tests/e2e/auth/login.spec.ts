@@ -102,8 +102,8 @@ test.describe('User Authentication', () => {
   });
 
   test('should check remember me checkbox', async () => {
-    // Check the remember me box (use setChecked for Radix UI checkbox)
-    await loginPage.rememberMeCheckbox.setChecked(true);
+    // Check the remember me box (click for Radix UI checkbox)
+    await loginPage.rememberMeCheckbox.click();
 
     // Verify it's checked
     await loginPage.expectRememberMeChecked();

@@ -57,8 +57,8 @@ test.describe('Component Visual Regression @visual', () => {
   test('should match checkbox styling checked', async ({ page }) => {
     const checkbox = page.locator('#rememberMe');
 
-    // Use setChecked for Radix UI checkbox (renders as button role="checkbox")
-    await checkbox.setChecked(true);
+    // Click to check Radix UI checkbox (renders as button role="checkbox")
+    await checkbox.click();
 
     const checkboxContainer = page.locator('label[for="rememberMe"]').locator('..');
 
