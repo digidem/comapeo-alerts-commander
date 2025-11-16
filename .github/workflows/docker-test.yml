@@ -46,6 +46,7 @@ jobs:
     permissions:
       contents: read
       pull-requests: write
+      issues: write  # Required for posting PR comments via Issues API
 
     steps:
       - name: Checkout repository
