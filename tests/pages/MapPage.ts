@@ -165,8 +165,10 @@ export class MapPage extends BasePage {
    */
   async clickContinue() {
     await this.continueButton.click();
-    // Wait for navigation
-    await this.page.waitForURL(/projects|select-projects/, { timeout: 10000 });
+    // Wait for project selection UI to appear (app uses component state, not URL routing)
+    // Look for the "Back to Map" button which is unique to project selection step
+    const backToMapButton = this.page.getByRole('button', { name: /back.*map/i });
+    await backToMapButton.waitFor({ state: 'visible', timeout: 10000 });
   }
 
   /**
@@ -174,7 +176,9 @@ export class MapPage extends BasePage {
    */
   async logout() {
     await this.navbarLogout.click();
-    await this.page.waitForURL('/', { timeout: 5000 });
+    // Wait for login form to appear (app uses component state, stays on /)
+    const loginButton = this.page.getByRole('button', { name: /connect/i });
+    await loginButton.waitFor({ state: 'visible', timeout: 5000 });
   }
 
   /**

@@ -36,8 +36,10 @@ test.describe('User Authentication', () => {
     // Perform login
     await loginPage.loginWithValidCredentials();
 
-    // Verify successful login by checking URL changed and we're no longer on login page
-    await page.waitForURL(/map|projects/, { timeout: 10000 });
+    // Verify successful login by waiting for map interface to appear
+    // App uses component state switching, not URL routing
+    const logoutButton = page.getByRole('button', { name: /logout|sign.*out/i });
+    await logoutButton.waitFor({ state: 'visible', timeout: 10000 });
 
     // Verify login form is no longer visible
     await expect(loginPage.serverNameInput).not.toBeVisible({ timeout: 5000 });
@@ -48,8 +50,9 @@ test.describe('User Authentication', () => {
     // Login with remember me
     await loginPage.loginWithValidCredentials(true);
 
-    // Wait for navigation away from login
-    await page.waitForURL(/map|projects/, { timeout: 10000 });
+    // Wait for map interface to appear (app uses component state, not URL routing)
+    const logoutButton = page.getByRole('button', { name: /logout|sign.*out/i });
+    await logoutButton.waitFor({ state: 'visible', timeout: 10000 });
 
     // Verify localStorage has credentials
     const stored = await page.evaluate(() => localStorage.getItem('mapAlert_credentials'));
