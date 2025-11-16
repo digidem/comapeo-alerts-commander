@@ -48,6 +48,9 @@ jobs:
 
           echo "Publishing $PROJECT_NAME v$PROJECT_VERSION"
 
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
