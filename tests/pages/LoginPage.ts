@@ -43,9 +43,8 @@ export class LoginPage extends BasePage {
     await this.serverNameInput.fill(serverName);
     await this.bearerTokenInput.fill(token);
 
-    if (rememberMe) {
-      await this.rememberMeCheckbox.check();
-    }
+    // Use setChecked() for Radix UI checkbox (renders as button role="checkbox")
+    await this.rememberMeCheckbox.setChecked(rememberMe);
 
     await this.loginButton.click();
   }
@@ -73,9 +72,8 @@ export class LoginPage extends BasePage {
   async clearForm() {
     await this.serverNameInput.clear();
     await this.bearerTokenInput.clear();
-    if (await this.rememberMeCheckbox.isChecked()) {
-      await this.rememberMeCheckbox.uncheck();
-    }
+    // Use setChecked() for Radix UI checkbox (renders as button role="checkbox")
+    await this.rememberMeCheckbox.setChecked(false);
   }
 
   /**
