@@ -45,9 +45,13 @@ export class MapPage extends BasePage {
 
   /**
    * Navigate to map page
+   * Note: App uses component state switching on "/" route, not separate /map route
+   * After navigation, use waitForMapLoad() to ensure map interface is visible
    */
   async navigate() {
-    await this.goto('/map');
+    await this.goto('/');
+    // Wait for map container to appear (indicates we're in map state, not login)
+    await this.waitForMapLoad();
   }
 
   /**
