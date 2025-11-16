@@ -13,7 +13,7 @@ The easiest way to get started is using pre-built images from Docker Hub:
 docker pull <dockerhub-username>/comapeo-alerts-commander:latest
 
 # Run the container
-docker run -d -p 8080:80 --name comapeo-alerts comapeo-alerts-commander:latest
+docker run -d -p 8080:80 --name comapeo-alerts <dockerhub-username>/comapeo-alerts-commander:latest
 
 # Check the application
 curl http://localhost:8080/health
