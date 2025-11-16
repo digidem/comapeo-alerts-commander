@@ -1,0 +1,366 @@
+name: E2E Tests
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+  pull_request:
+    branches:
+      - main
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+  schedule:
+    # Run nightly at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      browser:
+        description: 'Browser to test (chromium, firefox, webkit, all)'
+        required: false
+        default: 'chromium'
+        type: choice
+        options:
+          - chromium
+          - firefox
+          - webkit
+          - all
+
+# Required permissions for PR comments
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+env:
+  TEST_SERVER_URL: https://demo.comapeo.cloud
+  CI: true
+
+jobs:
+  test:
+    name: Playwright E2E Tests
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        # Respect workflow_dispatch browser input, otherwise run all browsers
+        browser: ${{
+          github.event_name == 'workflow_dispatch' && github.event.inputs.browser != 'all'
+          && fromJSON(format('["{0}"]', github.event.inputs.browser))
+          || fromJSON('["chromium", "firefox", "webkit"]')
+        }}
+        shard: [1/3, 2/3, 3/3]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps ${{ matrix.browser }}
+
+      - name: Build application
+        run: npm run build
+        env:
+          VITE_MAPBOX_TOKEN: ${{ secrets.VITE_MAPBOX_TOKEN }}
+
+      - name: Run Playwright tests
+        run: npx playwright test --project=${{ matrix.browser }} --shard=${{ matrix.shard }} --grep-invert @visual
+        env:
+          TEST_BEARER_TOKEN: ${{ secrets.TEST_BEARER_TOKEN }}
+          TEST_SERVER_URL: ${{ env.TEST_SERVER_URL }}
+          VITE_MAPBOX_TOKEN: ${{ secrets.VITE_MAPBOX_TOKEN }}
+
+      - name: Upload blob report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: blob-report-${{ matrix.browser }}-${{ strategy.job-index }}
+          path: blob-report/
+          retention-days: 1
+          if-no-files-found: ignore
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-results-${{ matrix.browser }}-${{ strategy.job-index }}
+          path: test-results/
+          retention-days: 7
+          if-no-files-found: ignore
+
+      - name: Upload videos on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-videos-${{ matrix.browser }}-${{ strategy.job-index }}
+          path: test-results/**/video.webm
+          retention-days: 7
+          if-no-files-found: ignore
+
+  merge-reports:
+    name: Merge Test Reports
+    if: always()
+    needs: test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download all blob reports
+        uses: actions/download-artifact@v4
+        with:
+          path: all-blob-reports
+          pattern: blob-report-*
+          merge-multiple: true
+        continue-on-error: true
+
+      - name: Check if reports exist
+        id: check-reports
+        run: |
+          if [ -d "all-blob-reports" ] && [ "$(ls -A all-blob-reports)" ]; then
+            echo "reports_exist=true" >> $GITHUB_OUTPUT
+            echo "Found blob reports:"
+            ls -la all-blob-reports
+          else
+            echo "reports_exist=false" >> $GITHUB_OUTPUT
+            echo "No blob reports found"
+          fi
+
+      - name: Merge reports
+        if: steps.check-reports.outputs.reports_exist == 'true'
+        run: npx playwright merge-reports --reporter html ./all-blob-reports
+
+      - name: Upload merged HTML report
+        if: steps.check-reports.outputs.reports_exist == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-merged
+          path: playwright-report/
+          retention-days: 30
+          if-no-files-found: ignore
+
+      - name: Comment PR with test results
+        if: github.event_name == 'pull_request' && steps.check-reports.outputs.reports_exist == 'true'
+        uses: actions/github-script@v7
+        continue-on-error: true  # Don't fail if comment fails
+        with:
+          script: |
+            const fs = require('fs');
+
+            // Try to find test results from merged report
+            let resultsPath = 'playwright-report/data.json';
+            if (!fs.existsSync(resultsPath)) {
+              console.log('No merged results found, skipping PR comment');
+              return;
+            }
+
+            // Read merged results
+            const data = JSON.parse(fs.readFileSync(resultsPath, 'utf8'));
+
+            const totalTests = data.stats?.expected + data.stats?.unexpected + data.stats?.flaky + data.stats?.skipped || 0;
+            const passed = data.stats?.expected || 0;
+            const failed = data.stats?.unexpected || 0;
+            const flaky = data.stats?.flaky || 0;
+            const skipped = data.stats?.skipped || 0;
+
+            const comment = `## 🎭 E2E Test Results
+
+            **Total Tests:** ${totalTests}
+            **Passed:** ✅ ${passed}
+            **Failed:** ❌ ${failed}
+            **Flaky:** ⚠️ ${flaky}
+            **Skipped:** ⏭️ ${skipped}
+
+            **Duration:** ${Math.round((data.stats?.duration || 0) / 1000)}s
+
+            ${failed > 0 ? '❌ Some tests failed. Please review the failures.' : '✅ All tests passed!'}
+
+            [View full report in artifacts](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            `;
+
+            // Find existing comment
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+            });
+
+            const botComment = comments.find(comment =>
+              comment.user.type === 'Bot' &&
+              comment.body.includes('🎭 E2E Test Results')
+            );
+
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: comment
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.pull_request.number,
+                body: comment
+              });
+            }
+
+  # Visual regression testing job
+  # Tests visual consistency across browsers and viewports
+  visual-regression:
+    name: Visual Regression Tests
+    runs-on: ubuntu-latest
+    if: always()  # Run even if E2E tests fail
+    needs: test
+
+    strategy:
+      fail-fast: false
+      matrix:
+        # Respect workflow_dispatch browser input, otherwise run all browsers
+        browser: ${{
+          github.event_name == 'workflow_dispatch' && github.event.inputs.browser != 'all'
+          && fromJSON(format('["{0}"]', github.event.inputs.browser))
+          || fromJSON('["chromium", "firefox", "webkit"]')
+        }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps ${{ matrix.browser }}
+
+      - name: Build application
+        run: npm run build
+        env:
+          VITE_MAPBOX_TOKEN: ${{ secrets.VITE_MAPBOX_TOKEN }}
+
+      - name: Check for baseline snapshots
+        id: check-baselines
+        run: |
+          if [ -d "tests/snapshots" ] && [ "$(find tests/snapshots -name '*.png' 2>/dev/null | wc -l)" -gt 0 ]; then
+            echo "baselines_exist=true" >> $GITHUB_OUTPUT
+            echo "✅ Found $(find tests/snapshots -name '*.png' | wc -l) baseline snapshots"
+          else
+            echo "baselines_exist=false" >> $GITHUB_OUTPUT
+            echo "⚠️ No baseline snapshots found - will generate them on this run"
+          fi
+
+      - name: Run visual regression tests
+        run: |
+          if [ "${{ steps.check-baselines.outputs.baselines_exist }}" == "false" ]; then
+            echo "📸 Generating baseline snapshots..."
+            npx playwright test --grep @visual --project=${{ matrix.browser }} --update-snapshots
+          else
+            echo "🔍 Running visual regression tests against baselines..."
+            npx playwright test --grep @visual --project=${{ matrix.browser }}
+          fi
+        continue-on-error: false  # Fail if visual tests fail
+        env:
+          VISUAL_TESTS: 'true'  # Use HTML reporter instead of blob reporter
+          TEST_BEARER_TOKEN: ${{ secrets.TEST_BEARER_TOKEN }}
+          TEST_SERVER_URL: ${{ env.TEST_SERVER_URL }}
+          VITE_MAPBOX_TOKEN: ${{ secrets.VITE_MAPBOX_TOKEN }}
+
+      - name: Upload visual test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-test-results-${{ matrix.browser }}
+          path: test-results/
+          retention-days: 7
+          if-no-files-found: ignore
+
+      - name: Upload visual diffs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-regression-diffs-${{ matrix.browser }}
+          path: test-results/**/*-diff.png
+          retention-days: 30
+          if-no-files-found: ignore
+
+      - name: Upload actual screenshots on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-regression-actual-${{ matrix.browser }}
+          path: test-results/**/*-actual.png
+          retention-days: 7
+          if-no-files-found: ignore
+
+      - name: Upload baseline snapshots (existing or newly generated)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-snapshots-${{ matrix.browser }}
+          path: tests/**/*.png
+          retention-days: 90
+          if-no-files-found: ignore
+
+      - name: Comment on missing baselines
+        if: steps.check-baselines.outputs.baselines_exist == 'false' && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        continue-on-error: true
+        with:
+          script: |
+            const comment = `## 📸 Visual Regression Baselines Generated
+
+            This is the first run of visual regression tests for this branch.
+            Baseline snapshots have been generated and uploaded as artifacts.
+
+            **Next Steps:**
+            1. Download the \`visual-snapshots-*\` artifacts from this workflow run
+            2. Extract and review the baseline snapshots
+            3. If they look correct, commit them to the repository:
+               \`\`\`bash
+               # Download and extract artifacts to tests/snapshots/
+               git add tests/snapshots
+               git commit -m "chore: add visual regression baseline snapshots"
+               git push
+               \`\`\`
+            4. Re-run the workflow to validate against the new baselines
+
+            [Download artifacts](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            `;
+
+            github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              body: comment
+            });

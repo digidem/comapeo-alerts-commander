@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  web:
+    # Use pre-built image from Docker Hub
+    image: <dockerhub-username>/comapeo-alerts-commander:latest
+
+    # Or build from local Dockerfile (uncomment to use)
+    # build:
+    #   context: .
+    #   dockerfile: Dockerfile
+
+    container_name: comapeo-alerts
+
+    # Port mapping: host:container
+    ports:
+      - "8080:80"
+
+    # Restart policy
+    restart: unless-stopped
+
+    # Health check
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 3s
+      start_period: 5s
+      retries: 3
+
+    # Optional: Resource limits
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: '1'
+    #       memory: 512M
+    #     reservations:
+    #       cpus: '0.5'
+    #       memory: 256M
+
+    # Optional: Environment variables
+    # These are baked into the image at build time, but shown here for reference
+    # environment:
+    #   - NODE_ENV=production
+
+    # Optional: Labels for organization
+    labels:
+      - "com.example.description=CoMapeo Alerts Commander"
+      - "com.example.version=1.0"
+
+    # Optional: Networks
+    # networks:
+    #   - app-network
+
+# Optional: Custom networks
+# networks:
+#   app-network:
+#     driver: bridge
+
+# Optional: Volumes (if you need persistent data)
+# volumes:
+#   app-data:

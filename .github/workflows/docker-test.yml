@@ -1,0 +1,391 @@
+name: Docker Build and Test
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+  pull_request:
+    branches:
+      - main
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+
+env:
+  REGISTRY: docker.io
+
+jobs:
+  lint:
+    name: Lint Dockerfile
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run Hadolint (Dockerfile linter)
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: Dockerfile
+          failure-threshold: warning
+          ignore: DL3018
+
+      - name: Lint summary
+        run: |
+          echo "## 🔍 Dockerfile Lint Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Dockerfile passes linting checks" >> $GITHUB_STEP_SUMMARY
+
+  build-test:
+    name: Build and Test Docker Image
+    runs-on: ubuntu-latest
+    needs: lint
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write  # Required for posting PR comments via Issues API
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Extract project metadata
+        id: project
+        run: |
+          # Extract project name and version from package.json
+          PROJECT_NAME=$(node -p "require('./package.json').name || 'comapeo-alerts-commander'")
+          PROJECT_VERSION=$(node -p "require('./package.json').version || '0.0.0'")
+          NODE_VERSION=$(node -p "require('./package.json').engines?.node || '20'")
+
+          echo "name=$PROJECT_NAME" >> $GITHUB_OUTPUT
+          echo "version=$PROJECT_VERSION" >> $GITHUB_OUTPUT
+          echo "node_version=$NODE_VERSION" >> $GITHUB_OUTPUT
+
+          echo "Project: $PROJECT_NAME v$PROJECT_VERSION (Node $NODE_VERSION)"
+
+      - name: Set image name
+        id: image
+        run: |
+          # Use secret if available, otherwise use placeholder for testing
+          if [ -n "${{ secrets.DOCKERHUB_USERNAME }}" ]; then
+            IMAGE_NAME="${{ secrets.DOCKERHUB_USERNAME }}/comapeo-alerts-commander"
+          else
+            IMAGE_NAME="local/comapeo-alerts-commander"
+          fi
+          echo "name=$IMAGE_NAME" >> $GITHUB_OUTPUT
+          echo "Using image name: $IMAGE_NAME"
+
+      - name: Generate Docker tags
+        id: tags
+        run: |
+          TAGS=""
+          IMAGE_NAME="${{ steps.image.outputs.name }}"
+
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            # For PRs: pr-<number>
+            PR_TAG="pr-${{ github.event.pull_request.number }}"
+            TAGS="${IMAGE_NAME}:${PR_TAG}"
+            echo "primary_tag=${PR_TAG}" >> $GITHUB_OUTPUT
+          else
+            # For main branch: branch-<commit>
+            BRANCH_TAG="${{ github.ref_name }}-$(echo ${{ github.sha }} | cut -c1-7)"
+            TAGS="${IMAGE_NAME}:${BRANCH_TAG}"
+            echo "primary_tag=${BRANCH_TAG}" >> $GITHUB_OUTPUT
+          fi
+
+          echo "tags=${TAGS}" >> $GITHUB_OUTPUT
+          echo "Generated tag: ${TAGS}"
+
+      - name: Build Docker image
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          tags: test-image:local
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            NODE_ENV=production
+            VITE_MAPBOX_TOKEN=${{ secrets.VITE_MAPBOX_TOKEN }}
+
+      - name: Test Docker image structure
+        run: |
+          echo "## 🧪 Testing Docker Image" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Get image size
+          IMAGE_SIZE=$(docker images test-image:local --format "{{.Size}}")
+          echo "**Image Size:** $IMAGE_SIZE" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Check image layers
+          echo "**Image Layers:**" >> $GITHUB_STEP_SUMMARY
+          docker history test-image:local --human=true --format "table {{.Size}}\t{{.CreatedBy}}" | head -n 10 >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Verify nginx is present
+          docker run --rm test-image:local nginx -v
+
+          # Verify required files exist in the image
+          echo "**Verifying required files:**" >> $GITHUB_STEP_SUMMARY
+          docker run --rm test-image:local sh -c "ls -la /usr/share/nginx/html/" | tee -a $GITHUB_STEP_SUMMARY
+
+          # Check for index.html
+          docker run --rm test-image:local sh -c "test -f /usr/share/nginx/html/index.html" && echo "✅ index.html found" >> $GITHUB_STEP_SUMMARY || (echo "❌ index.html missing" >> $GITHUB_STEP_SUMMARY && exit 1)
+
+          # Check for manifest.json (PWA)
+          docker run --rm test-image:local sh -c "test -f /usr/share/nginx/html/manifest.json" && echo "✅ manifest.json found" >> $GITHUB_STEP_SUMMARY || echo "⚠️ manifest.json missing" >> $GITHUB_STEP_SUMMARY
+
+          # Check for service worker
+          docker run --rm test-image:local sh -c "test -f /usr/share/nginx/html/sw.js" && echo "✅ sw.js found" >> $GITHUB_STEP_SUMMARY || echo "⚠️ sw.js missing" >> $GITHUB_STEP_SUMMARY
+
+          # Verify nginx config
+          docker run --rm test-image:local sh -c "nginx -t"
+          echo "✅ Nginx configuration valid" >> $GITHUB_STEP_SUMMARY
+
+      - name: Run container for testing
+        run: |
+          # Start container
+          docker run -d -p 8080:80 --name test-container test-image:local
+
+          # Wait for container to be healthy
+          echo "Waiting for container to start..."
+          sleep 5
+
+          # Check container is running
+          docker ps | grep test-container
+
+      - name: Test HTTP endpoints
+        run: |
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**HTTP Endpoint Tests:**" >> $GITHUB_STEP_SUMMARY
+
+          # Test health endpoint
+          echo "Testing /health endpoint..."
+          HEALTH_RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/health)
+          if [ "$HEALTH_RESPONSE" = "200" ]; then
+            echo "✅ /health returns 200" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ /health returns $HEALTH_RESPONSE" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
+          # Test main page
+          echo "Testing / endpoint..."
+          ROOT_RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/)
+          if [ "$ROOT_RESPONSE" = "200" ]; then
+            echo "✅ / returns 200" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ / returns $ROOT_RESPONSE" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
+          # Test that index.html contains expected content
+          echo "Testing page content..."
+          CONTENT=$(curl -s http://localhost:8080/)
+          if echo "$CONTENT" | grep -q "CoMapeo"; then
+            echo "✅ Page contains expected content" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ Page content may be incomplete" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # Test SPA routing (should return 200 for non-existent routes)
+          echo "Testing SPA routing..."
+          SPA_RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/some/random/path)
+          if [ "$SPA_RESPONSE" = "200" ]; then
+            echo "✅ SPA routing works (fallback to index.html)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ SPA routing failed: returns $SPA_RESPONSE" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
+          # Test static asset with proper headers
+          echo "Testing static asset caching..."
+          CACHE_HEADER=$(curl -s -I http://localhost:8080/manifest.json | grep -i "cache-control" || echo "No cache header")
+          echo "**Cache-Control header:** $CACHE_HEADER" >> $GITHUB_STEP_SUMMARY
+
+      - name: Test security headers
+        run: |
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Security Headers:**" >> $GITHUB_STEP_SUMMARY
+
+          # Check for security headers
+          HEADERS=$(curl -s -I http://localhost:8080/)
+
+          if echo "$HEADERS" | grep -qi "X-Frame-Options"; then
+            echo "✅ X-Frame-Options header present" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ X-Frame-Options header missing" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if echo "$HEADERS" | grep -qi "X-Content-Type-Options"; then
+            echo "✅ X-Content-Type-Options header present" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ X-Content-Type-Options header missing" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if echo "$HEADERS" | grep -qi "X-XSS-Protection"; then
+            echo "✅ X-XSS-Protection header present" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ X-XSS-Protection header missing" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Check container logs
+        if: always()
+        run: |
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Container Logs:**" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          docker logs test-container 2>&1 | tail -n 20 >> $GITHUB_STEP_SUMMARY || true
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Cleanup test container
+        if: always()
+        run: |
+          docker stop test-container || true
+          docker rm test-container || true
+
+      - name: Check Docker Hub credentials
+        id: check_creds
+        run: |
+          if [ -n "${{ secrets.DOCKERHUB_USERNAME }}" ] && [ -n "${{ secrets.DOCKERHUB_TOKEN }}" ]; then
+            echo "available=true" >> $GITHUB_OUTPUT
+            echo "Docker Hub credentials available"
+          else
+            echo "available=false" >> $GITHUB_OUTPUT
+            echo "Docker Hub credentials not configured (optional for PR testing)"
+          fi
+
+      - name: Log in to Docker Hub (for PR images)
+        if: github.event_name == 'pull_request' && steps.check_creds.outputs.available == 'true'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+        continue-on-error: true
+
+      - name: Tag and push PR image
+        if: github.event_name == 'pull_request' && steps.check_creds.outputs.available == 'true'
+        run: |
+          PR_TAG="pr-${{ github.event.pull_request.number }}"
+          IMAGE_NAME="${{ steps.image.outputs.name }}"
+
+          # Tag the local test image
+          docker tag test-image:local ${IMAGE_NAME}:${PR_TAG}
+
+          # Push to Docker Hub
+          docker push ${IMAGE_NAME}:${PR_TAG} || echo "Failed to push (credentials may not be configured)"
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**PR Image Published:**" >> $GITHUB_STEP_SUMMARY
+          echo '```bash' >> $GITHUB_STEP_SUMMARY
+          echo "docker pull ${IMAGE_NAME}:${PR_TAG}" >> $GITHUB_STEP_SUMMARY
+          echo "docker run -p 8080:80 ${IMAGE_NAME}:${PR_TAG}" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+        continue-on-error: true
+
+      - name: Comment on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        env:
+          IMAGE_NAME: ${{ steps.image.outputs.name }}
+          CREDS_AVAILABLE: ${{ steps.check_creds.outputs.available }}
+        with:
+          script: |
+            const prNumber = context.payload.pull_request.number;
+            const prTag = `pr-${prNumber}`;
+            const imageName = process.env.IMAGE_NAME;
+            const credsAvailable = process.env.CREDS_AVAILABLE === 'true';
+
+            let comment = `## 🐳 Docker Build Successful
+
+            Your PR has been built and tested successfully!
+
+            **Test Results:** ✅ All tests passed
+            **PR Tag:** \`${prTag}\`
+
+            `;
+
+            if (credsAvailable) {
+              comment += `### Test the PR image locally:
+            \`\`\`bash
+            docker pull ${imageName}:${prTag}
+            docker run -p 8080:80 ${imageName}:${prTag}
+            \`\`\`
+
+            Then open http://localhost:8080 in your browser.
+
+            **Note:** PR images are available for testing but are not published to the \`latest\` tag.
+            `;
+            } else {
+              comment += `### Docker Hub Publishing
+
+            ⚠️ Docker Hub credentials are not configured for this repository.
+
+            To enable PR image publishing:
+            1. Add \`DOCKERHUB_USERNAME\` and \`DOCKERHUB_TOKEN\` to repository secrets
+            2. PR images will be automatically published for testing
+
+            You can still test locally by building the Dockerfile:
+            \`\`\`bash
+            docker build -t ${prTag} .
+            docker run -p 8080:80 ${prTag}
+            \`\`\`
+            `;
+            }
+
+            // Find existing comment
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+            });
+
+            const botComment = comments.find(comment =>
+              comment.user.type === 'Bot' &&
+              comment.body.includes('🐳 Docker Build')
+            );
+
+            if (botComment) {
+              // Update existing comment
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: comment
+              });
+            } else {
+              // Create new comment
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body: comment
+              });
+            }
+        continue-on-error: true
+
+      - name: Final summary
+        if: always()
+        run: |
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Build Information:**" >> $GITHUB_STEP_SUMMARY
+          echo "- Event: ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Branch: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Commit: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Project: ${{ steps.project.outputs.name }} v${{ steps.project.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "- PR Number: #${{ github.event.pull_request.number }}" >> $GITHUB_STEP_SUMMARY
+            echo "- PR Tag: pr-${{ github.event.pull_request.number }}" >> $GITHUB_STEP_SUMMARY
+          fi

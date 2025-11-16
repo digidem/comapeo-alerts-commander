@@ -16,6 +16,19 @@ dist-ssr
 .env
 .env.local
 .env.production
+.env.test
+
+# Docker
+docker-compose.yml
+docker-compose.override.yml
+
+# Playwright / E2E Tests
+test-results/
+playwright-report/
+playwright/.cache/
+tests/.auth/
+tests/__snapshots__/**/*.png
+!tests/__snapshots__/**/*-expected.png
 
 # Editor directories and files
 .vscode/*
