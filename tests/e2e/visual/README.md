@@ -13,7 +13,7 @@ These tests ensure visual consistency across different browsers, viewports, and 
 
 Playwright takes screenshots and compares them against baseline snapshots stored in:
 ```
-tests/e2e/visual/*.spec.ts-snapshots/
+tests/snapshots/visual/*.spec.ts-snapshots/
 ```
 
 Each browser maintains its own baselines because rendering differs slightly between Chromium, Firefox, and WebKit.
@@ -33,9 +33,9 @@ When UI changes are intentional and visual tests fail:
 ### Option 1: Update via CI
 1. Push your changes to trigger the workflow
 2. Visual tests will fail
-3. Download the `visual-test-results-{browser}` artifacts from GitHub Actions
-4. Extract the `-actual.png` files
-5. Move them to `tests/e2e/visual/*.spec.ts-snapshots/` replacing the old baselines
+3. Download the `visual-snapshots-{browser}` artifacts from GitHub Actions
+4. Extract the baseline snapshots
+5. Review and commit them to the repository
 6. Commit and push the updated snapshots
 
 ### Option 2: Use Workflow Dispatch with Update Flag

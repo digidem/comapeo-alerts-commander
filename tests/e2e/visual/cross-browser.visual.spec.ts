@@ -23,7 +23,8 @@ test.describe('Cross-Browser Visual Regression @visual', () => {
     await expect(page.locator('#serverName')).toBeVisible();
 
     // Screenshot of just the text elements to compare font rendering
-    const title = page.getByRole('heading', { level: 1 }).first();
+    // CardTitle renders as h3, not h1
+    const title = page.getByRole('heading', { level: 3 }).first();
 
     await expect(title).toHaveScreenshot(`title-font-${browserName}.png`, {
       animations: 'disabled',

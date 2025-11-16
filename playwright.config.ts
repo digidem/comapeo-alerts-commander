@@ -158,5 +158,5 @@ export default defineConfig({
   outputDir: 'test-results/',
 
   /* Folder for test artifacts such as screenshots, videos, traces, etc. */
-  snapshotDir: './tests/__snapshots__',
+  snapshotDir: './tests/snapshots',
 });

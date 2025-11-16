@@ -262,9 +262,9 @@ jobs:
       - name: Check for baseline snapshots
         id: check-baselines
         run: |
-          if [ -d "tests/__snapshots__" ] && [ "$(find tests/__snapshots__ -name '*.png' 2>/dev/null | wc -l)" -gt 0 ]; then
+          if [ -d "tests/snapshots" ] && [ "$(find tests/snapshots -name '*.png' 2>/dev/null | wc -l)" -gt 0 ]; then
             echo "baselines_exist=true" >> $GITHUB_OUTPUT
-            echo "✅ Found $(find tests/__snapshots__ -name '*.png' | wc -l) baseline snapshots"
+            echo "✅ Found $(find tests/snapshots -name '*.png' | wc -l) baseline snapshots"
           else
             echo "baselines_exist=false" >> $GITHUB_OUTPUT
             echo "⚠️ No baseline snapshots found - will generate them on this run"
@@ -338,8 +338,8 @@ jobs:
             2. Extract and review the baseline snapshots
             3. If they look correct, commit them to the repository:
                \`\`\`bash
-               # Download and extract artifacts to tests/__snapshots__/
-               git add tests/__snapshots__
+               # Download and extract artifacts to tests/snapshots/
+               git add tests/snapshots
                git commit -m "chore: add visual regression baseline snapshots"
                git push
                \`\`\`
