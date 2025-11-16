@@ -3,8 +3,9 @@
 A Progressive Web App for creating and managing geographic alerts with interactive map integration. Built for the CoMapeo ecosystem, this application provides a mobile-first interface for field work and remote monitoring.
 
 ![PWA](https://img.shields.io/badge/PWA-enabled-blue)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.5-blue)
-![React](https://img.shields.io/badge/React-18-blue)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue)
+![React](https://img.shields.io/badge/React-19-blue)
+![Vite](https://img.shields.io/badge/Vite-7-purple)
 
 ## What is CoMapeo Alerts Commander?
 
@@ -202,7 +203,7 @@ See [DEVELOPMENT.md](./DEVELOPMENT.md) for detailed development guidelines.
 
 ## Tech Stack Highlights
 
-- **Frontend**: React 18 + TypeScript + Vite
+- **Frontend**: React 19 + TypeScript 5.9 + Vite 7
 - **UI**: Tailwind CSS + shadcn/ui + Radix UI
 - **Maps**: Mapbox GL / MapLibre GL
 - **i18n**: i18next with auto-translation support

@@ -4,22 +4,28 @@ This document provides detailed information about the technologies and libraries
 
 ## Core Technologies
 
-### React 18
+### React 19
 Modern frontend framework with concurrent rendering, automatic batching, and improved performance. We use TypeScript for type safety throughout the application.
 
-### Vite 5
+**Current version**: 19.2.0
+
+### Vite 7
 Lightning-fast build tool with features including:
 - Hot Module Replacement (HMR) for instant feedback during development
 - Optimized production builds with automatic code splitting
 - Native ES modules support
 - Built-in TypeScript support
 
-### TypeScript 5.5
+**Current version**: 7.2.2
+
+### TypeScript 5.9
 Provides type safety and better developer experience with:
 - Strict type checking
 - IntelliSense and autocomplete
 - Compile-time error detection
 - Better refactoring support
+
+**Current version**: 5.9.3
 
 ## UI & Styling
 
