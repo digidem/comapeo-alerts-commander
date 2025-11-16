@@ -98,38 +98,55 @@ jobs:
             NODE_ENV=production
           provenance: false
 
-      - name: Generate publish summary
+      - name: Generate build summary
         run: |
-          echo "## 🚀 Docker Image Published" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ github.event.inputs.push_image }}" == "false" ]; then
+            echo "## 🔨 Docker Image Built (Not Published)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "## 🚀 Docker Image Published" >> $GITHUB_STEP_SUMMARY
+          fi
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Project:** ${{ steps.project.outputs.name }} v${{ steps.project.outputs.version }}" >> $GITHUB_STEP_SUMMARY
           echo "**Event:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
           echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
           echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Published Tags:**" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          echo "${{ steps.meta.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Image Digest:** ${{ steps.build.outputs.digest }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Pull and Run" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo '```bash' >> $GITHUB_STEP_SUMMARY
-          echo "# Pull the latest image" >> $GITHUB_STEP_SUMMARY
-          echo "docker pull ${{ env.IMAGE_NAME }}:latest" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "# Run the container" >> $GITHUB_STEP_SUMMARY
-          echo "docker run -d -p 8080:80 --name comapeo-alerts ${{ env.IMAGE_NAME }}:latest" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "# Access the application" >> $GITHUB_STEP_SUMMARY
-          echo "# Open http://localhost:8080 in your browser" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
+          if [ "${{ github.event.inputs.push_image }}" != "false" ]; then
+            echo "**Published Tags:**" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "${{ steps.meta.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Image Digest:** ${{ steps.build.outputs.digest }}" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### Pull and Run" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo '```bash' >> $GITHUB_STEP_SUMMARY
+            echo "# Pull the latest image" >> $GITHUB_STEP_SUMMARY
+            echo "docker pull ${{ env.IMAGE_NAME }}:latest" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "# Run the container" >> $GITHUB_STEP_SUMMARY
+            echo "docker run -d -p 8080:80 --name comapeo-alerts ${{ env.IMAGE_NAME }}:latest" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "# Access the application" >> $GITHUB_STEP_SUMMARY
+            echo "# Open http://localhost:8080 in your browser" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          else
+            echo "**Image built locally only (not pushed to registry)**" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "To test the locally built image:" >> $GITHUB_STEP_SUMMARY
+            echo '```bash' >> $GITHUB_STEP_SUMMARY
+            echo "# The image was built but not pushed" >> $GITHUB_STEP_SUMMARY
+            echo "# Use docker images to see locally built images" >> $GITHUB_STEP_SUMMARY
+            echo "docker images | grep comapeo-alerts-commander" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          fi
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Platforms:** linux/amd64, linux/arm64" >> $GITHUB_STEP_SUMMARY
 
       - name: Verify published image
+        # Only verify if image was actually pushed (digest only exists after push)
+        if: ${{ github.event.inputs.push_image != 'false' }}
         run: |
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 🧪 Image Verification" >> $GITHUB_STEP_SUMMARY
