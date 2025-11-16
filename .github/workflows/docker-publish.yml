@@ -23,7 +23,6 @@ on:
 
 env:
   REGISTRY: docker.io
-  IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/comapeo-alerts-commander
 
 jobs:
   publish:
@@ -52,9 +51,34 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      - name: Check Docker Hub credentials
+        id: check_creds
+        run: |
+          if [ -n "${{ secrets.DOCKERHUB_USERNAME }}" ] && [ -n "${{ secrets.DOCKERHUB_TOKEN }}" ]; then
+            echo "available=true" >> $GITHUB_OUTPUT
+            echo "✅ Docker Hub credentials available - will publish to registry"
+          else
+            echo "available=false" >> $GITHUB_OUTPUT
+            echo "⚠️ Docker Hub credentials not configured - will build locally only"
+            echo "To enable publishing, add DOCKERHUB_USERNAME and DOCKERHUB_TOKEN secrets"
+          fi
+
+      - name: Set image name
+        id: image
+        run: |
+          if [ "${{ steps.check_creds.outputs.available }}" == "true" ]; then
+            IMAGE_NAME="${{ secrets.DOCKERHUB_USERNAME }}/comapeo-alerts-commander"
+          else
+            IMAGE_NAME="local/comapeo-alerts-commander"
+          fi
+          echo "name=$IMAGE_NAME" >> $GITHUB_OUTPUT
+          echo "Using image name: $IMAGE_NAME"
+
       - name: Log in to Docker Hub
-        # Only login if we're actually pushing (requires Docker Hub credentials)
-        if: ${{ github.event.inputs.push_image != 'false' }}
+        # Only login if we have credentials AND we're actually pushing
+        if: |
+          steps.check_creds.outputs.available == 'true' &&
+          github.event.inputs.push_image != 'false'
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
@@ -65,7 +89,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.IMAGE_NAME }}
+          images: ${{ steps.image.outputs.name }}
           labels: |
             org.opencontainers.image.title=${{ steps.project.outputs.name }}
             org.opencontainers.image.version=${{ steps.project.outputs.version }}
@@ -91,7 +115,8 @@ jobs:
         with:
           context: .
           platforms: linux/amd64,linux/arm64
-          push: ${{ github.event.inputs.push_image != 'false' }}
+          # Only push if credentials available AND push_image not false
+          push: ${{ steps.check_creds.outputs.available == 'true' && github.event.inputs.push_image != 'false' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
@@ -125,10 +150,10 @@ jobs:
             echo "" >> $GITHUB_STEP_SUMMARY
             echo '```bash' >> $GITHUB_STEP_SUMMARY
             echo "# Pull the latest image" >> $GITHUB_STEP_SUMMARY
-            echo "docker pull ${{ env.IMAGE_NAME }}:latest" >> $GITHUB_STEP_SUMMARY
+            echo "docker pull ${{ steps.image.outputs.name }}:latest" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "# Run the container" >> $GITHUB_STEP_SUMMARY
-            echo "docker run -d -p 8080:80 --name comapeo-alerts ${{ env.IMAGE_NAME }}:latest" >> $GITHUB_STEP_SUMMARY
+            echo "docker run -d -p 8080:80 --name comapeo-alerts ${{ steps.image.outputs.name }}:latest" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "# Access the application" >> $GITHUB_STEP_SUMMARY
             echo "# Open http://localhost:8080 in your browser" >> $GITHUB_STEP_SUMMARY
@@ -148,7 +173,7 @@ jobs:
 
       - name: Verify published image
         # Only verify if image was actually pushed (digest only exists after push)
-        if: ${{ github.event.inputs.push_image != 'false' }}
+        if: ${{ steps.check_creds.outputs.available == 'true' && github.event.inputs.push_image != 'false' }}
         run: |
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 🧪 Image Verification" >> $GITHUB_STEP_SUMMARY
@@ -156,7 +181,7 @@ jobs:
 
           # Use the image digest for reliable verification
           # Digest is guaranteed to exist regardless of event type
-          IMAGE_REF="${{ env.IMAGE_NAME }}@${{ steps.build.outputs.digest }}"
+          IMAGE_REF="${{ steps.image.outputs.name }}@${{ steps.build.outputs.digest }}"
           echo "Pulling image by digest: ${{ steps.build.outputs.digest }}"
           docker pull ${IMAGE_REF}
 
