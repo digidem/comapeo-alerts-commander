@@ -117,7 +117,7 @@ export class MapPage extends BasePage {
     if (!text) throw new Error('Coordinates not displayed');
 
     // Parse format like "51.5074, -0.1278" or "51.5074° N, 0.1278° W"
-    const matches = text.match(/([-]?\d+\\.\\d+)[^-\d]+([-]?\d+\\.\\d+)/);
+    const matches = text.match(/([-]?\d+\.\d+)[^-\d]+([-]?\d+\.\d+)/);
     if (!matches) throw new Error(`Cannot parse coordinates from: ${text}`);
 
     return {
