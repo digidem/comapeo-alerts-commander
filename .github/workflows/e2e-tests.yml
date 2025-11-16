@@ -48,7 +48,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        browser: [chromium, firefox, webkit]
+        # Respect workflow_dispatch browser input, otherwise run all browsers
+        browser: ${{
+          github.event_name == 'workflow_dispatch' && github.event.inputs.browser != 'all'
+          && fromJSON(format('["{0}"]', github.event.inputs.browser))
+          || fromJSON('["chromium", "firefox", "webkit"]')
+        }}
         shard: [1/3, 2/3, 3/3]
 
     steps:
@@ -236,7 +241,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        browser: [chromium, firefox, webkit]
+        # Respect workflow_dispatch browser input, otherwise run all browsers
+        browser: ${{
+          github.event_name == 'workflow_dispatch' && github.event.inputs.browser != 'all'
+          && fromJSON(format('["{0}"]', github.event.inputs.browser))
+          || fromJSON('["chromium", "firefox", "webkit"]')
+        }}
 
     steps:
       - name: Checkout code
