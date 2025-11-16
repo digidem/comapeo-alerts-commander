@@ -117,13 +117,36 @@ export class MapPage extends BasePage {
     if (!text) throw new Error('Coordinates not displayed');
 
     // Parse format like "51.5074, -0.1278" or "51.5074° N, 0.1278° W"
+    // Extract two decimal numbers (with optional minus sign)
     const matches = text.match(/([-]?\d+\.\d+)[^-\d]+([-]?\d+\.\d+)/);
     if (!matches) throw new Error(`Cannot parse coordinates from: ${text}`);
 
-    return {
-      lat: parseFloat(matches[1]),
-      lng: parseFloat(matches[2]),
-    };
+    let lat = parseFloat(matches[1]);
+    let lng = parseFloat(matches[2]);
+
+    // Check for cardinal direction markers (N/S/E/W) and apply correct sign
+    // Format: "51.5074° N, 0.1278° W" where W/S should be negative
+    const hasCardinals = /[NSEW]/i.test(text);
+    if (hasCardinals) {
+      // Extract coordinate values WITH their cardinal markers
+      // Use the value from the match, not the initially extracted lat/lng
+      const latMatch = text.match(/([-]?\d+\.\d+)[^\d]*?([NS])/i);
+      const lngMatch = text.match(/([-]?\d+\.\d+)[^\d]*?([EW])/i);
+
+      if (latMatch) {
+        // Extract the coordinate value from the match and apply sign based on N/S
+        const latValue = Math.abs(parseFloat(latMatch[1]));
+        lat = latMatch[2].toUpperCase() === 'S' ? -latValue : latValue;
+      }
+
+      if (lngMatch) {
+        // Extract the coordinate value from the match and apply sign based on E/W
+        const lngValue = Math.abs(parseFloat(lngMatch[1]));
+        lng = lngMatch[2].toUpperCase() === 'W' ? -lngValue : lngValue;
+      }
+    }
+
+    return { lat, lng };
   }
 
   /**
