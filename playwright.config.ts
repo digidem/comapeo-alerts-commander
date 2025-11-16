@@ -29,12 +29,19 @@ export default defineConfig({
   workers: process.env.CI ? 2 : undefined,
 
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
-  reporter: [
-    ['html', { outputFolder: 'playwright-report', open: 'never' }],
-    ['json', { outputFile: 'test-results/results.json' }],
-    ['junit', { outputFile: 'test-results/junit.xml' }],
-    process.env.CI ? ['github'] : ['list'],
-  ],
+  reporter: process.env.CI
+    ? [
+        // Use blob reporter in CI for sharding support
+        ['blob'],
+        ['github'], // GitHub Actions annotations
+      ]
+    : [
+        // Local development reporters
+        ['html', { outputFolder: 'playwright-report', open: 'never' }],
+        ['json', { outputFile: 'test-results/results.json' }],
+        ['junit', { outputFile: 'test-results/junit.xml' }],
+        ['list'],
+      ],
 
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
