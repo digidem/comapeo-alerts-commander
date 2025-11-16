@@ -135,13 +135,14 @@ jobs:
           echo "### 🧪 Image Verification" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
-          # Pull the image with the commit SHA tag
-          COMMIT_TAG="${{ github.ref_name }}-$(echo ${{ github.sha }} | cut -c1-7)"
-          echo "Pulling image with tag: $COMMIT_TAG"
-          docker pull ${{ env.IMAGE_NAME }}:${COMMIT_TAG}
+          # Use the image digest for reliable verification
+          # Digest is guaranteed to exist regardless of event type
+          IMAGE_REF="${{ env.IMAGE_NAME }}@${{ steps.build.outputs.digest }}"
+          echo "Pulling image by digest: ${{ steps.build.outputs.digest }}"
+          docker pull ${IMAGE_REF}
 
           # Run the container
-          docker run -d -p 8080:80 --name verify-container ${{ env.IMAGE_NAME }}:${COMMIT_TAG}
+          docker run -d -p 8080:80 --name verify-container ${IMAGE_REF}
 
           # Wait for container to start
           sleep 5
