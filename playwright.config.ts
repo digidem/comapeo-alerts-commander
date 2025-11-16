@@ -30,11 +30,18 @@ export default defineConfig({
 
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: process.env.CI
-    ? [
-        // Use blob reporter in CI for sharding support
-        ['blob'],
-        ['github'], // GitHub Actions annotations
-      ]
+    ? process.env.VISUAL_TESTS === 'true'
+      ? [
+          // Visual regression tests need HTML reporter for snapshot management
+          ['html', { outputFolder: 'playwright-report', open: 'never' }],
+          ['json', { outputFile: 'test-results/results.json' }],
+          ['github'], // GitHub Actions annotations
+        ]
+      : [
+          // Use blob reporter in CI for sharding support
+          ['blob'],
+          ['github'], // GitHub Actions annotations
+        ]
     : [
         // Local development reporters
         ['html', { outputFolder: 'playwright-report', open: 'never' }],

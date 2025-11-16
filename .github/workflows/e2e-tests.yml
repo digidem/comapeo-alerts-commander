@@ -73,7 +73,7 @@ jobs:
           VITE_MAPBOX_TOKEN: ${{ secrets.VITE_MAPBOX_TOKEN }}
 
       - name: Run Playwright tests
-        run: npx playwright test --project=${{ matrix.browser }} --shard=${{ matrix.shard }}
+        run: npx playwright test --project=${{ matrix.browser }} --shard=${{ matrix.shard }} --grep-invert @visual
         env:
           TEST_BEARER_TOKEN: ${{ secrets.TEST_BEARER_TOKEN }}
           TEST_SERVER_URL: ${{ env.TEST_SERVER_URL }}
@@ -259,10 +259,29 @@ jobs:
         env:
           VITE_MAPBOX_TOKEN: ${{ secrets.VITE_MAPBOX_TOKEN }}
 
+      - name: Check for baseline snapshots
+        id: check-baselines
+        run: |
+          if [ -d "tests/__snapshots__" ] && [ "$(find tests/__snapshots__ -name '*.png' 2>/dev/null | wc -l)" -gt 0 ]; then
+            echo "baselines_exist=true" >> $GITHUB_OUTPUT
+            echo "✅ Found $(find tests/__snapshots__ -name '*.png' | wc -l) baseline snapshots"
+          else
+            echo "baselines_exist=false" >> $GITHUB_OUTPUT
+            echo "⚠️ No baseline snapshots found - will generate them on this run"
+          fi
+
       - name: Run visual regression tests
-        run: npx playwright test --grep @visual --project=${{ matrix.browser }}
+        run: |
+          if [ "${{ steps.check-baselines.outputs.baselines_exist }}" == "false" ]; then
+            echo "📸 Generating baseline snapshots..."
+            npx playwright test --grep @visual --project=${{ matrix.browser }} --update-snapshots
+          else
+            echo "🔍 Running visual regression tests against baselines..."
+            npx playwright test --grep @visual --project=${{ matrix.browser }}
+          fi
         continue-on-error: false  # Fail if visual tests fail
         env:
+          VISUAL_TESTS: 'true'  # Use HTML reporter instead of blob reporter
           TEST_BEARER_TOKEN: ${{ secrets.TEST_BEARER_TOKEN }}
           TEST_SERVER_URL: ${{ env.TEST_SERVER_URL }}
           VITE_MAPBOX_TOKEN: ${{ secrets.VITE_MAPBOX_TOKEN }}
@@ -294,11 +313,44 @@ jobs:
           retention-days: 7
           if-no-files-found: ignore
 
-      - name: Upload baseline snapshots
-        if: success()
+      - name: Upload baseline snapshots (existing or newly generated)
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: visual-snapshots-${{ matrix.browser }}
           path: tests/**/*.png
           retention-days: 90
           if-no-files-found: ignore
+
+      - name: Comment on missing baselines
+        if: steps.check-baselines.outputs.baselines_exist == 'false' && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        continue-on-error: true
+        with:
+          script: |
+            const comment = `## 📸 Visual Regression Baselines Generated
+
+            This is the first run of visual regression tests for this branch.
+            Baseline snapshots have been generated and uploaded as artifacts.
+
+            **Next Steps:**
+            1. Download the \`visual-snapshots-*\` artifacts from this workflow run
+            2. Extract and review the baseline snapshots
+            3. If they look correct, commit them to the repository:
+               \`\`\`bash
+               # Download and extract artifacts to tests/__snapshots__/
+               git add tests/__snapshots__
+               git commit -m "chore: add visual regression baseline snapshots"
+               git push
+               \`\`\`
+            4. Re-run the workflow to validate against the new baselines
+
+            [Download artifacts](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            `;
+
+            github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              body: comment
+            });
