@@ -14,6 +14,12 @@ RUN npm ci
 # Copy source code
 COPY . .
 
+# Accept build arguments for Vite environment variables
+ARG VITE_MAPBOX_TOKEN
+# Make build args available as environment variables during build
+# Vite will pick these up and bake them into the static bundle
+ENV VITE_MAPBOX_TOKEN=$VITE_MAPBOX_TOKEN
+
 # Build the application
 # The build command runs: vite build
 RUN npm run build
