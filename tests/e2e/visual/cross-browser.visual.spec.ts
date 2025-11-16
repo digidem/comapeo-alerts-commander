@@ -35,7 +35,8 @@ test.describe('Cross-Browser Visual Regression @visual', () => {
     // Fill the form
     await page.locator('#serverName').fill('demo.comapeo.cloud');
     await page.locator('#bearerToken').fill('test-token');
-    await page.locator('#rememberMe').check();
+    // Use setChecked for Radix UI checkbox (renders as button role="checkbox")
+    await page.locator('#rememberMe').setChecked(true);
 
     await expect(page).toHaveScreenshot(`form-elements-${browserName}.png`, {
       fullPage: true,
