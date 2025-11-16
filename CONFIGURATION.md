@@ -191,40 +191,58 @@ See [ICONS.md](./ICONS.md) for detailed instructions on customizing app icons.
 
 ## Service Worker Configuration
 
-The service worker (`public/sw.js`) handles offline caching.
+The service worker (`public/sw.js`) handles offline caching for static assets only.
 
 ### Cache Strategy
 
 **Current implementation:**
-- Static assets: Cache-first (instant loading)
-- API responses: Network-first (always fresh data)
-- Map tiles: Cache-first (reduce bandwidth)
+- **Static assets only**: PWA icons, manifest.json, and root path
+- **Cache-first strategy**: Serves from cache if available, fetches if not
+- **API requests**: Explicitly NOT cached - always go directly to the network
+- **Map tiles**: NOT cached - always fetched from the network
 
-**Customizing cache behavior:**
+**What gets cached:**
 
-Edit `public/sw.js`:
+The service worker caches these static files on installation:
 
 ```javascript
-// Cache version (increment to force update)
-const CACHE_VERSION = 'v1';
-
-// Files to cache on install
-const STATIC_CACHE = [
-  '/',
-  '/index.html',
-  '/assets/index.js',
-  '/assets/index.css',
+// public/sw.js
+const CACHE_NAME = "comapeo-alert-v2";
+const urlsToCache = [
+  "/",
+  "/manifest.json",
+  "/icon.svg",
+  "/favicon.ico",
+  "/icon-72.png",
+  "/icon-96.png",
+  "/icon-128.png",
+  // ... other icon sizes
 ];
-
-// Add more files or change strategy as needed
 ```
+
+**What does NOT get cached:**
+
+The service worker explicitly skips these requests (lines 24-32):
+- Any URL containing `/projects`
+- Any URL containing `/alerts`
+- Any URL containing `comapeo.cloud`
+- Any URL containing `api.`
+
+This means:
+- ✅ The app shell loads offline (UI, icons, basic structure)
+- ❌ API data requires internet connection
+- ❌ Map tiles require internet connection
+- ❌ Alert data requires internet connection
 
 **Force service worker update:**
 
-Change the `CACHE_VERSION` to force all clients to update:
+To force users to get an updated service worker, change the cache name:
 ```javascript
-const CACHE_VERSION = 'v2'; // Increment this
+// public/sw.js
+const CACHE_NAME = "comapeo-alert-v3"; // Increment the version number
 ```
+
+This will cause the old cache to be deleted and a new one created.
 
 ## Map Configuration
 

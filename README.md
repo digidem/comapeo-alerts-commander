@@ -15,7 +15,7 @@ CoMapeo Alerts Commander is a web application that helps you create and manage l
 - **Interactive Maps** - Click to select locations, search places, or enter coordinates manually
 - **Multi-Project Support** - Manage alerts across multiple CoMapeo projects simultaneously
 - **Smart Defaults** - Auto-populated detection times and intelligent form handling
-- **Progressive Web App** - Install on any device, works offline, feels native
+- **Progressive Web App** - Install on any device, feels native, offline-ready app shell
 - **Multilingual** - Full support for English, Portuguese, Spanish, and French
 - **Flexible Maps** - Use Mapbox for premium features or OpenStreetMap for free, open-source mapping
 
@@ -107,7 +107,7 @@ Install CoMapeo Alerts Commander as a native app:
 - **iOS Safari**: Tap Share → Add to Home Screen
 - **Android Chrome**: Tap Menu → Add to Home Screen
 
-Once installed, the app works offline and feels like a native application.
+Once installed, the app feels like a native application. The app shell loads offline, but requires internet for maps and data.
 
 ### Customize Your App Icon
 

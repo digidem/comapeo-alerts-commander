@@ -176,11 +176,17 @@ Client-side routing solution:
 ## PWA Technologies
 
 ### Service Workers
-Enables offline functionality:
-- Asset caching
-- API response caching
-- Background sync
-- Push notifications (future feature)
+Enables basic offline functionality:
+- **Static asset caching** - PWA icons, manifest, and root path
+- **Cache-first strategy** - Instant loading of cached assets
+- **Selective caching** - API requests are explicitly NOT cached to ensure fresh data
+- **Background sync** - Not yet implemented (future feature)
+- **Push notifications** - Not yet implemented (future feature)
+
+**Important limitations:**
+- API data (projects, alerts) requires internet connection
+- Map tiles are not cached and require internet connection
+- Only the app shell (UI structure and icons) works offline
 
 ### Web App Manifest
 Defines PWA installation behavior:

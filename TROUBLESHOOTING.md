@@ -23,8 +23,8 @@ This guide covers common issues you might encounter while using or developing Co
 **Solutions:**
 
 1. **Check internet connectivity:**
-   - Maps require internet connection for first load
-   - Tiles are cached after first load for offline use
+   - Maps require internet connection to load and display tiles
+   - Map tiles are NOT cached by the service worker (always require network access)
 
 2. **Verify Mapbox token (if using):**
    ```bash
@@ -280,11 +280,13 @@ This guide covers common issues you might encounter while using or developing Co
    - Look for error messages
    - Common issue: Syntax error in sw.js
 
-5. **Update service worker version:**
+5. **Update cache name to force refresh:**
    ```javascript
    // public/sw.js
-   const CACHE_VERSION = 'v2'; // Increment this
+   const CACHE_NAME = "comapeo-alert-v3"; // Increment the version number
    ```
+
+   This forces all clients to re-cache static assets with the new version.
 
 ## Build & Performance Issues
 
