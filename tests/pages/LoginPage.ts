@@ -89,8 +89,13 @@ export class LoginPage extends BasePage {
    * Wait for login to complete successfully
    */
   async waitForLoginSuccess() {
-    // Wait for navigation to map page (require /map or /index, not just /)
-    await this.page.waitForURL(/\/(map|index)$/, { timeout: 10000 });
+    // Wait for the login form to disappear (replaced by map interface)
+    // The app uses component state switching, not URL routing
+    await this.loginButton.waitFor({ state: 'hidden', timeout: 10000 });
+
+    // Wait for map interface to appear (logout button only exists after login)
+    const logoutButton = this.page.getByRole('button', { name: /logout|sign.*out/i });
+    await logoutButton.waitFor({ state: 'visible', timeout: 10000 });
   }
 
   /**
@@ -99,8 +104,15 @@ export class LoginPage extends BasePage {
 
   async expectLoginSuccess() {
     await this.waitForLoginSuccess();
-    // Verify we're on the map page (require /map or /index, not just /)
-    await this.expectURL(/\/(map|index)$/);
+
+    // Verify login form is gone and map interface is visible
+    await expect(this.loginButton).toBeHidden();
+
+    const logoutButton = this.page.getByRole('button', { name: /logout|sign.*out/i });
+    await expect(logoutButton).toBeVisible();
+
+    // URL should still be on root (app uses component state, not routing)
+    await this.expectURL(/^\/$/);
   }
 
   async expectLoginError(expectedMessage?: string) {
