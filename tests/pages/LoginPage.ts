@@ -117,7 +117,8 @@ export class LoginPage extends BasePage {
     await expect(logoutButton).toBeVisible();
 
     // URL should still be on root (app uses component state, not routing)
-    await this.expectURL(/^\/$/);
+    // Match full URL ending with just "/" (e.g., http://localhost:8080/)
+    await this.expectURL(/\/$/);
   }
 
   async expectLoginError(expectedMessage?: string) {
