@@ -283,14 +283,14 @@ RESTful API integration:
 - Alert CRUD operations
 - Geospatial data handling
 
-## Testing (Future)
+## Testing
 
-The project is set up to support:
-- **Playwright** - End-to-end testing
+The project uses:
+- **Playwright** - End-to-end testing (fully implemented)
 - **Vitest** - Unit testing (planned)
 - **Testing Library** - Component testing (planned)
 
-See `E2E_TESTING_README.md` for more details on the testing setup.
+See [tests/README.md](../tests/README.md) for comprehensive testing documentation.
 
 ## Development Server
 
