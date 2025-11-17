@@ -107,13 +107,15 @@ This guide covers common issues you might encounter while using or developing Co
    - Not `[latitude, longitude]`
    - Example: `[-74.5, 40]` is correct for New York
 
-2. **Update default map config:**
+2. **Update default map center:**
+   - Open `src/hooks/useMapInteraction.ts`
+   - Find lines 70-72 (Mapbox) and 115-117 (MapLibre)
+   - Change `[0, 0]` to your desired coordinates
+   - Example:
    ```typescript
-   // src/components/MapInterface.tsx
-   const DEFAULT_MAP_CONFIG = {
-     center: [-74.5, 40], // [longitude, latitude]
-     zoom: 9,
-   };
+   center: selectedCoords
+     ? [selectedCoords.lng, selectedCoords.lat]
+     : [-74.5, 40], // Your default coordinates
    ```
 
 3. **Verify alert coordinates:**

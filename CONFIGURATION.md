@@ -248,22 +248,39 @@ This will cause the old cache to be deleted and a new one created.
 
 ### Default Map Settings
 
-Map behavior is configured in `src/components/MapInterface.tsx`:
+Map defaults are hard-coded in `src/hooks/useMapInteraction.ts` during map initialization.
 
-```typescript
-const DEFAULT_MAP_CONFIG = {
-  center: [-74.5, 40], // [longitude, latitude]
-  zoom: 9,
-  pitch: 0,
-  bearing: 0,
-};
-```
+**Current defaults** (when no location is selected):
+- **Center**: `[0, 0]` (Prime Meridian/Equator)
+- **Zoom**: `2` (world view)
 
 **To change default map view:**
 
 1. Find your desired coordinates (use [latlong.net](https://www.latlong.net/))
-2. Update `DEFAULT_MAP_CONFIG.center`
-3. Adjust `zoom` level (1 = world, 20 = building level)
+2. Open `src/hooks/useMapInteraction.ts`
+3. Find the map initialization for both Mapbox (line 67) and MapLibre (line 112)
+4. Update the center coordinates in both places:
+
+```typescript
+// For Mapbox (around line 70-72)
+center: selectedCoords
+  ? [selectedCoords.lng, selectedCoords.lat]
+  : [-74.5, 40], // Change this: [longitude, latitude]
+zoom: selectedCoords ? 10 : 9, // Change default zoom here
+
+// For MapLibre (around line 115-117) - make the same changes
+center: selectedCoords
+  ? [selectedCoords.lng, selectedCoords.lat]
+  : [-74.5, 40], // Change this: [longitude, latitude]
+zoom: selectedCoords ? 10 : 9, // Change default zoom here
+```
+
+**Zoom levels:**
+- `1` = World view
+- `5` = Continent view
+- `10` = City view
+- `15` = Street view
+- `20` = Building level
 
 ### Map Style Customization
 
