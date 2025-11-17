@@ -2,6 +2,8 @@
 
 A Progressive Web App for creating and managing geographic alerts with interactive map integration. Built for the CoMapeo ecosystem, this application provides a mobile-first interface for field work and remote monitoring.
 
+**[Live Demo](#)** | **[Documentation](#documentation)** | **[Contributing](#contributing)**
+
 ![PWA](https://img.shields.io/badge/PWA-enabled-blue)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue)
 ![React](https://img.shields.io/badge/React-19-blue)
@@ -32,7 +34,7 @@ CoMapeo Alerts Commander is a web application that helps you create and manage l
 
 ```bash
 # Clone the repository
-git clone <repository-url>
+git clone https://github.com/digidem/comapeo-alerts-commander.git
 cd comapeo-alerts-commander
 
 # Install dependencies
@@ -83,16 +85,16 @@ Connect to your CoMapeo server:
 The app supports both Mapbox (premium) and OpenStreetMap (free):
 
 **With Mapbox Token:**
-- ✅ Satellite imagery
-- ✅ High-quality vector tiles
-- ✅ Premium geocoding
-- ✅ Faster tile loading
+- Satellite imagery
+- High-quality vector tiles
+- Premium geocoding
+- Faster tile loading
 
 **Without Mapbox Token:**
-- ✅ Free OpenStreetMap tiles
-- ✅ No API key required
-- ✅ Fully open-source
-- ℹ️ Street view only (no satellite)
+- Free OpenStreetMap tiles
+- No API key required
+- Fully open-source
+- Street view only (no satellite)
 
 Get a free Mapbox token at [mapbox.com](https://account.mapbox.com/access-tokens/) - the free tier includes 50,000 map loads per month.
 
@@ -179,10 +181,10 @@ Run with Docker for containerized deployment:
 
 ```bash
 # Pull from Docker Hub
-docker pull <dockerhub-username>/comapeo-alerts-commander:latest
+docker pull communityfirst/comapeo-alerts-commander:latest
 
 # Run the container
-docker run -p 8080:80 <dockerhub-username>/comapeo-alerts-commander:latest
+docker run -p 8080:80 communityfirst/comapeo-alerts-commander:latest
 ```
 
 See [DOCKER.md](./DOCKER.md) for detailed Docker instructions.
@@ -218,26 +220,26 @@ This project is actively maintained and used in production. Features are added b
 
 ### Recent Updates
 
-- ✅ Multi-platform Docker support (AMD64, ARM64)
-- ✅ Automated CI/CD with GitHub Actions
-- ✅ Comprehensive E2E test suite
-- ✅ Four-language support (EN, PT, ES, FR)
-- ✅ Dual map provider support
+- Multi-platform Docker support (AMD64, ARM64)
+- Automated CI/CD with GitHub Actions
+- Comprehensive E2E test suite
+- Four-language support (EN, PT, ES, FR)
+- Dual map provider support
 
 ### Roadmap
 
-- 🔄 Alert clustering for large datasets
-- 🔄 Offline data synchronization
-- 🔄 Push notifications
-- 🔄 Advanced filtering and search
-- 🔄 Export capabilities (CSV, GeoJSON)
+- Alert clustering for large datasets
+- Offline data synchronization
+- Push notifications
+- Advanced filtering and search
+- Export capabilities (CSV, GeoJSON)
 
 ## Support
 
 Need help?
 
 - **Documentation**: Start with this README and linked guides
-- **Issues**: [GitHub Issues](https://github.com/your-repo/issues)
+- **Issues**: [GitHub Issues](https://github.com/digidem/comapeo-alerts-commander/issues)
 - **Troubleshooting**: See [TROUBLESHOOTING.md](./TROUBLESHOOTING.md)
 - **CoMapeo**: Visit [comapeo.cloud](https://www.comapeo.cloud/)
 
@@ -256,4 +258,4 @@ Special thanks to:
 
 ---
 
-**Made with ❤️ for environmental monitoring and field work**
+Made for environmental monitoring and field work.

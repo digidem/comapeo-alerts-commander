@@ -36,18 +36,18 @@ VITE_MAPBOX_TOKEN=your_mapbox_token_here
    - `geocoding:read` (for location search)
 
 **When to use a Mapbox token:**
-- ✅ You want satellite imagery and high-quality vector tiles
-- ✅ You need premium geocoding with detailed results
-- ✅ You require accurate routing and directions (future feature)
-- ✅ You prefer faster tile loading (Mapbox CDN is optimized)
+- You want satellite imagery and high-quality vector tiles
+- You need premium geocoding with detailed results
+- You require accurate routing and directions (future feature)
+- You prefer faster tile loading (Mapbox CDN is optimized)
 
 **Without a Mapbox token:**
-- ✅ App works perfectly with OpenStreetMap tiles
-- ✅ Location search uses Nominatim (free OSM geocoding)
-- ✅ No costs, no sign-up required
-- ✅ Fully open-source stack
-- ⚠️ Basic street map view only (no satellite)
-- ⚠️ Slower geocoding with rate limits (1 request/second)
+- App works perfectly with OpenStreetMap tiles
+- Location search uses Nominatim (free OSM geocoding)
+- No costs, no sign-up required
+- Fully open-source stack
+- Basic street map view only (no satellite)
+- Slower geocoding with rate limits (1 request/second)
 
 **Cost considerations:**
 - Mapbox free tier: 50,000 map loads per month
@@ -229,10 +229,10 @@ The service worker explicitly skips these requests (lines 24-32):
 - Any URL containing `api.`
 
 This means:
-- ✅ The app shell loads offline (UI, icons, basic structure)
-- ❌ API data requires internet connection
-- ❌ Map tiles require internet connection
-- ❌ Alert data requires internet connection
+- The app shell loads offline (UI, icons, basic structure)
+- API data requires internet connection
+- Map tiles require internet connection
+- Alert data requires internet connection
 
 **Force service worker update:**
 
