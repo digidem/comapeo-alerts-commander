@@ -259,3 +259,5 @@ Special thanks to:
 ---
 
 Made for environmental monitoring and field work.
+
+Made with ❤️ by [Awana Digital](https://awana.digital/)
