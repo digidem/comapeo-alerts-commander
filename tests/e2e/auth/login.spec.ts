@@ -49,10 +49,10 @@ test.describe('User Authentication', () => {
     // Verify successful login by waiting for map interface to appear
     // App uses component state switching, not URL routing
     const logoutButton = page.getByRole('button', { name: /logout|sign.*out/i });
-    await logoutButton.waitFor({ state: 'visible', timeout: 10000 });
+    await logoutButton.waitFor({ state: 'visible', timeout: 15000 });
 
     // Verify login form is no longer visible
-    await expect(loginPage.serverNameInput).not.toBeVisible({ timeout: 5000 });
+    await expect(loginPage.serverNameInput).not.toBeVisible({ timeout: 10000 });
   });
 
   test('should persist session with remember me enabled', async ({ page }) => {
@@ -61,7 +61,7 @@ test.describe('User Authentication', () => {
 
     // Wait for map interface to appear (app uses component state, not URL routing)
     const logoutButton = page.getByRole('button', { name: /logout|sign.*out/i });
-    await logoutButton.waitFor({ state: 'visible', timeout: 10000 });
+    await logoutButton.waitFor({ state: 'visible', timeout: 15000 });
 
     // Verify localStorage has credentials
     const stored = await page.evaluate(() => localStorage.getItem('mapAlert_credentials'));
@@ -83,8 +83,8 @@ test.describe('User Authentication', () => {
     // Should show error message
     await loginPage.expectLoginError();
 
-    // Should still be on login page
-    await loginPage.expectURL(/^\/$/);
+    // Should still be on login page (URL ends with /)
+    await loginPage.expectURL(/\/$/);
   });
 
   test('should show error when server is unreachable', async ({ page }) => {

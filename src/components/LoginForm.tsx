@@ -18,10 +18,11 @@ interface LoginFormProps {
     serverName: string;
     bearerToken: string;
     rememberMe: boolean;
-  }) => void;
+  }) => Promise<void>;
+  error?: string | null;
 }
 
-export const LoginForm = ({ onLogin }: LoginFormProps) => {
+export const LoginForm = ({ onLogin, error }: LoginFormProps) => {
   const { t } = useTranslation();
   const [serverName, setServerName] = useState("");
   const [bearerToken, setBearerToken] = useState("");
@@ -37,16 +38,18 @@ export const LoginForm = ({ onLogin }: LoginFormProps) => {
 
     setIsLoading(true);
 
-    // Simulate API validation delay
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
-    onLogin({
-      serverName: serverName.trim(),
-      bearerToken: bearerToken.trim(),
-      rememberMe,
-    });
-
-    setIsLoading(false);
+    try {
+      await onLogin({
+        serverName: serverName.trim(),
+        bearerToken: bearerToken.trim(),
+        rememberMe,
+      });
+    } catch (err) {
+      // Error is handled by parent component
+      console.error('Login error:', err);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -97,6 +100,15 @@ export const LoginForm = ({ onLogin }: LoginFormProps) => {
                 {t("auth.rememberMe")}
               </Label>
             </div>
+
+            {error && (
+              <div
+                role="alert"
+                className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md"
+              >
+                {error}
+              </div>
+            )}
 
             <Button
               type="submit"

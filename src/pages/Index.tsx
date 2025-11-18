@@ -21,6 +21,7 @@ const Index = () => {
   const [alertsRefreshKey, setAlertsRefreshKey] = useState(0);
   const [isLoadingProjects, setIsLoadingProjects] = useState(false);
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
+  const [loginError, setLoginError] = useState<string | null>(null);
 
   // Function to fetch projects
   const fetchProjects = useCallback(
@@ -67,18 +68,41 @@ const Index = () => {
   }, [fetchProjects]);
 
   const handleLogin = async (creds: Credentials) => {
-    setCredentials(creds);
-    setIsAuthenticated(true);
-    setCurrentStep("map");
+    // Clear previous login errors
+    setLoginError(null);
 
-    if (creds.rememberMe) {
-      localStorage.setItem("mapAlert_credentials", JSON.stringify(creds));
+    try {
+      // Validate credentials by attempting to fetch projects
+      await apiService.fetchProjects(creds);
+
+      // If successful, proceed with login
+      setCredentials(creds);
+      setIsAuthenticated(true);
+      setCurrentStep("map");
+
+      if (creds.rememberMe) {
+        localStorage.setItem("mapAlert_credentials", JSON.stringify(creds));
+      }
+
+      toast.success(t("auth.successfullyAuthenticated"));
+
+      // Fetch projects for the map view
+      await fetchProjects(creds);
+    } catch (error: any) {
+      console.error("Login failed:", error);
+
+      // Set appropriate error message
+      if (error.message?.includes("Network") || error.message?.includes("fetch")) {
+        setLoginError(t("auth.serverUnreachable"));
+      } else if (error.response?.status === 401 || error.message?.includes("401") || error.message?.includes("Unauthorized")) {
+        setLoginError(t("auth.invalidCredentials"));
+      } else {
+        setLoginError(t("auth.loginFailed"));
+      }
+
+      // Re-throw to signal error to LoginForm
+      throw error;
     }
-
-    toast.success(t("auth.successfullyAuthenticated"));
-
-    // Fetch projects immediately after successful login
-    await fetchProjects(creds);
   };
 
   const handleLogout = () => {
@@ -122,7 +146,7 @@ const Index = () => {
   const renderCurrentStep = () => {
     switch (currentStep) {
       case "auth":
-        return <LoginForm onLogin={handleLogin} />;
+        return <LoginForm onLogin={handleLogin} error={loginError} />;
       case "map":
         return (
           <MapInterface
