@@ -29,9 +29,6 @@ const Index = () => {
       try {
         const fetchedProjects = await apiService.fetchProjects(creds);
         setProjects(fetchedProjects);
-        console.log(
-          `Fetched ${fetchedProjects.length} projects for MapInterface`,
-        );
       } catch (error) {
         console.error("Error fetching projects:", error);
         toast.error(t("projects.failedToFetch"));

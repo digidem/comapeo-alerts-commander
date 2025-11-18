@@ -96,7 +96,30 @@ This directory contains automated workflows for the CoMapeo Alerts Commander pro
 - Verification test results
 - Platform information
 
-### 3. Deploy to Production (`deploy-production.yml`)
+### 3. Deploy to GitHub Pages (`deploy-github-pages.yml`)
+
+**Purpose:** Deploy application to GitHub Pages
+
+**Triggers:**
+- Push to `main` branch
+- Manual workflow dispatch
+- Ignores changes to documentation files (`**.md`, `docs/**`)
+
+**What it does:**
+- Builds the React application with GitHub Pages base path
+- Uploads build artifact to GitHub Pages
+- Deploys to GitHub Pages environment
+
+**Deployment URL:** `https://<org>.github.io/comapeo-alerts-commander/`
+
+**Required Permissions:**
+- `contents: read`
+- `pages: write`
+- `id-token: write`
+
+**Note:** GitHub Pages must be enabled in repository settings and configured to deploy from GitHub Actions.
+
+### 4. Deploy to Cloudflare Pages (`deploy-production.yml`)
 
 **Purpose:** Deploy application to Cloudflare Pages
 
@@ -113,7 +136,7 @@ This directory contains automated workflows for the CoMapeo Alerts Commander pro
 - `CLOUDFLARE_API_TOKEN`
 - `CLOUDFLARE_ACCOUNT_ID`
 
-### 4. Deploy PR Preview (`deploy-pr-preview.yml`)
+### 5. Deploy PR Preview (`deploy-pr-preview.yml`)
 
 **Purpose:** Create preview deployments for pull requests
 
@@ -234,7 +257,8 @@ Pull Request Flow:
 Main Branch Flow:
   docker-test.yml → validates build
   docker-publish.yml → publishes to Docker Hub
-  deploy-production.yml → deploys to Cloudflare
+  deploy-github-pages.yml → deploys to GitHub Pages
+  deploy-production.yml → deploys to Cloudflare Pages
 
 Version Tag Flow:
   docker-publish.yml → publishes versioned images

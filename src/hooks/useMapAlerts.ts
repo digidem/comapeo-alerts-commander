@@ -179,14 +179,6 @@ export const useMapAlerts = (
         selectedProject,
       ]);
       setAlerts(fetchedAlerts);
-
-      if (fetchedAlerts.length === 0) {
-        console.log(`No alerts found for project: ${selectedProject.name}`);
-      } else {
-        console.log(
-          `Loaded ${fetchedAlerts.length} alerts for project: ${selectedProject.name}`,
-        );
-      }
     } catch (error) {
       console.error("Error loading alerts:", error);
       const errorMessage =

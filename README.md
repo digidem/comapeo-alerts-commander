@@ -120,26 +120,26 @@ Want to use your own logo instead of the default icon?
 2. Run `npm run generate:icons`
 3. All icon sizes are generated automatically
 
-See [ICONS.md](./ICONS.md) for detailed instructions.
+See [ICONS.md](./docs/ICONS.md) for detailed instructions.
 
 ## Documentation
 
 ### For Users
 
-- **[Configuration Guide](./CONFIGURATION.md)** - Environment variables, API setup, and customization options
-- **[Troubleshooting](./TROUBLESHOOTING.md)** - Common issues and solutions
-- **[Icon Customization](./ICONS.md)** - How to customize app icons
+- **[Configuration Guide](./docs/CONFIGURATION.md)** - Environment variables, API setup, and customization options
+- **[Troubleshooting](./docs/TROUBLESHOOTING.md)** - Common issues and solutions
+- **[Icon Customization](./docs/ICONS.md)** - How to customize app icons
 
 ### For Developers
 
-- **[Development Guide](./DEVELOPMENT.md)** - Development workflow, scripts, and best practices
-- **[Tech Stack](./TECH_STACK.md)** - Detailed information about technologies used
-- **[Testing Guide](./E2E_TESTING_README.md)** - End-to-end testing with Playwright
+- **[Development Guide](./docs/DEVELOPMENT.md)** - Development workflow, scripts, and best practices
+- **[Tech Stack](./docs/TECH_STACK.md)** - Detailed information about technologies used
+- **[Testing Guide](./tests/README.md)** - End-to-end testing with Playwright
 
 ### For Deployment
 
-- **[Deployment Guide](./DEPLOYMENT.md)** - Deploy to Cloudflare Pages
-- **[Docker Guide](./DOCKER.md)** - Container deployment
+- **[Deployment Guide](./docs/DEPLOYMENT.md)** - Deploy to Cloudflare Pages
+- **[Docker Guide](./docs/DOCKER.md)** - Container deployment
 
 ## Common Commands
 
@@ -172,7 +172,7 @@ The easiest way to deploy is via Cloudflare Pages with automatic GitHub integrat
 
 1. Push code to GitHub
 2. Connect repository to Cloudflare Pages
-3. Configure build settings (see [DEPLOYMENT.md](./DEPLOYMENT.md))
+3. Configure build settings (see [DEPLOYMENT.md](./docs/DEPLOYMENT.md))
 4. Automatic deployments on every push
 
 ### Docker
@@ -187,7 +187,7 @@ docker pull communityfirst/comapeo-alerts-commander:latest
 docker run -p 8080:80 communityfirst/comapeo-alerts-commander:latest
 ```
 
-See [DOCKER.md](./DOCKER.md) for detailed Docker instructions.
+See [DOCKER.md](./docs/DOCKER.md) for detailed Docker instructions.
 
 ## Contributing
 
@@ -201,7 +201,7 @@ We welcome contributions! Here's how to get started:
 6. Push to your branch (`git push origin feature/amazing-feature`)
 7. Open a Pull Request
 
-See [DEVELOPMENT.md](./DEVELOPMENT.md) for detailed development guidelines.
+See [DEVELOPMENT.md](./docs/DEVELOPMENT.md) for detailed development guidelines.
 
 ## Tech Stack Highlights
 
@@ -212,7 +212,7 @@ See [DEVELOPMENT.md](./DEVELOPMENT.md) for detailed development guidelines.
 - **PWA**: Service Workers + Web App Manifest
 - **Testing**: Playwright for E2E tests
 
-For complete technology details, see [TECH_STACK.md](./TECH_STACK.md).
+For complete technology details, see [TECH_STACK.md](./docs/TECH_STACK.md).
 
 ## Project Status
 
@@ -240,7 +240,7 @@ Need help?
 
 - **Documentation**: Start with this README and linked guides
 - **Issues**: [GitHub Issues](https://github.com/digidem/comapeo-alerts-commander/issues)
-- **Troubleshooting**: See [TROUBLESHOOTING.md](./TROUBLESHOOTING.md)
+- **Troubleshooting**: See [TROUBLESHOOTING.md](./docs/TROUBLESHOOTING.md)
 - **CoMapeo**: Visit [comapeo.cloud](https://www.comapeo.cloud/)
 
 ## License

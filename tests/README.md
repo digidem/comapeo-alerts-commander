@@ -541,8 +541,6 @@ export default defineConfig({
 - [Playwright Documentation](https://playwright.dev)
 - [Playwright Best Practices](https://playwright.dev/docs/best-practices)
 - [Playwright API Reference](https://playwright.dev/docs/api/class-playwright)
-- [Test Implementation Plan](../PLAYWRIGHT_IMPLEMENTATION_PLAN.md)
-- [E2E Testing Analysis](../E2E_TESTING_ANALYSIS.md)
 
 ---
 
@@ -550,6 +548,5 @@ export default defineConfig({
 
 For questions or issues:
 1. Check this guide first
-2. Review the [implementation plan](../PLAYWRIGHT_IMPLEMENTATION_PLAN.md)
-3. Search [Playwright docs](https://playwright.dev)
-4. Ask the team in Slack/Discord
+2. Search [Playwright docs](https://playwright.dev)
+3. Ask the team in Slack/Discord

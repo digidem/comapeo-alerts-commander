@@ -124,7 +124,7 @@ npm run test:visual
 npm run test:visual:update  # Update snapshots
 ```
 
-See `E2E_TESTING_README.md` for comprehensive testing documentation.
+See [../tests/README.md](../tests/README.md) for comprehensive testing documentation.
 
 ## Project Structure
 
@@ -463,7 +463,7 @@ npx playwright test -g "should create alert"
 - Mock external APIs when appropriate
 - Keep tests independent and isolated
 
-See `E2E_TESTING_README.md` for complete testing guide.
+See [../tests/README.md](../tests/README.md) for the complete testing guide.
 
 ### Manual Testing Checklist
 

@@ -40,9 +40,7 @@ coverage
 
 # Documentation
 *.md
-DEPLOYMENT.md
-ICONS.md
-DEPLOYMENT_LOG.md
+docs/
 
 # Misc
 .husky

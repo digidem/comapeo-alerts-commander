@@ -156,11 +156,6 @@ class ApiService {
         `/projects/${projectId}/remoteDetectionAlerts`,
         alertData,
       );
-
-      console.log(
-        `Alert created successfully for project ${projectId}:`,
-        alertData,
-      );
     } catch (error) {
       console.error(`Error creating alert for project ${projectId}:`, error);
       this.handleError(

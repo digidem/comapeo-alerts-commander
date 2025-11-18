@@ -37,9 +37,6 @@ export const ProjectSelection = ({
   useEffect(() => {
     const fetchProjects = async () => {
       if (projects.length > 0) {
-        console.log(
-          "Projects already loaded, skipping fetch in ProjectSelection",
-        );
         return; // Already loaded
       }
 
