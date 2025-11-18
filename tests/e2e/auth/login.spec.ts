@@ -1,7 +1,11 @@
 import { test, expect } from '@playwright/test';
 import { LoginPage } from '../../pages/LoginPage';
 import { MapPage } from '../../pages/MapPage';
-import { server, errorHandlers } from '../../fixtures/apiMocks';
+import {
+  setupDefaultMocks,
+  setupNetworkErrorMock,
+  clearMocks
+} from '../../fixtures/mockRoutes';
 
 // Skip all tests in local environment where browser crashes
 // Tests will run in CI which has proper headless browser support
@@ -11,6 +15,9 @@ test.describe('User Authentication', () => {
   let loginPage: LoginPage;
 
   test.beforeEach(async ({ page }) => {
+    // Set up API mocks before navigation
+    await setupDefaultMocks(page);
+
     // Each test gets a fresh browser context (clean storage) by default
     // Navigate to the page using domcontentloaded to avoid browser crashes
     await page.goto('/', { waitUntil: 'domcontentloaded' });
@@ -19,10 +26,8 @@ test.describe('User Authentication', () => {
     loginPage = new LoginPage(page);
   });
 
-  test.afterEach(() => {
-    // Reset MSW handlers to default after each test
-    server.resetHandlers();
-  });
+  // Note: No afterEach cleanup needed - routes are automatically cleared
+  // when the page context is destroyed between tests
 
   test('should display login form', async () => {
     // Verify form elements are visible
@@ -83,8 +88,9 @@ test.describe('User Authentication', () => {
   });
 
   test('should show error when server is unreachable', async ({ page }) => {
-    // Override with network error handler from MSW
-    server.use(errorHandlers.networkError);
+    // Clear default mocks and set up network error
+    await clearMocks(page);
+    await setupNetworkErrorMock(page);
 
     // Attempt login
     await loginPage.loginWithValidCredentials();

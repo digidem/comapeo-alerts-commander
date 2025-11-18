@@ -1,14 +1,12 @@
 import { test, expect } from '../../fixtures/auth';
 import { MapPage } from '../../pages/MapPage';
-import { server, errorHandlers } from '../../fixtures/apiMocks';
+import { clearMocks, setupGeocodingErrorMock } from '../../fixtures/mockRoutes';
 
 // TODO: Re-enable once map loading is fully stable (Phase 2)
 // API mocking is now in place (Phase 1 complete)
 test.describe.skip('Alert Creation Flow', () => {
-  test.afterEach(() => {
-    // Reset MSW handlers to default after each test
-    server.resetHandlers();
-  });
+  // Note: No afterEach cleanup needed - routes are automatically cleared
+  // when the page context is destroyed between tests
   test('should create alert for single project', async ({ authenticatedPage: page }) => {
     const mapPage = new MapPage(page);
 
@@ -95,10 +93,8 @@ test.describe.skip('Alert Creation Flow', () => {
 
 // TODO: Re-enable once map loading is fully stable (Phase 2)
 test.describe.skip('Map Interactions', () => {
-  test.afterEach(() => {
-    // Reset MSW handlers to default after each test
-    server.resetHandlers();
-  });
+  // Note: No afterEach cleanup needed - routes are automatically cleared
+  // when the page context is destroyed between tests
   test('should show instruction text when no location selected', async ({ authenticatedPage: page }) => {
     const mapPage = new MapPage(page);
 
@@ -134,16 +130,15 @@ test.describe.skip('Map Interactions', () => {
 // TODO: Re-enable once map loading is fully stable (Phase 2)
 // API mocking for error scenarios is now available
 test.describe.skip('Error Handling', () => {
-  test.afterEach(() => {
-    // Reset MSW handlers to default after each test
-    server.resetHandlers();
-  });
+  // Note: No afterEach cleanup needed - routes are automatically cleared
+  // when the page context is destroyed between tests
 
   test('should handle search errors gracefully', async ({ authenticatedPage: page }) => {
     const mapPage = new MapPage(page);
 
-    // Use MSW to mock geocoding API errors
-    server.use(errorHandlers.geocodingError);
+    // Clear default mocks and set up geocoding error
+    await clearMocks(page);
+    await setupGeocodingErrorMock(page);
 
     // Attempt search
     await mapPage.searchLocation('Invalid Location');
