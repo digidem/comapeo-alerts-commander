@@ -91,11 +91,11 @@ const Index = () => {
     } catch (error: any) {
       console.error("Login failed:", error);
 
-      // Set appropriate error message
-      if (error.message?.includes("Network") || error.message?.includes("fetch")) {
-        setLoginError(t("auth.serverUnreachable"));
-      } else if (error.response?.status === 401 || error.message?.includes("401") || error.message?.includes("Unauthorized")) {
+      // Set appropriate error message - check most specific errors first
+      if (error.response?.status === 401 || error.message?.includes("401") || error.message?.includes("Unauthorized")) {
         setLoginError(t("auth.invalidCredentials"));
+      } else if (error.message?.includes("Network error")) {
+        setLoginError(t("auth.serverUnreachable"));
       } else {
         setLoginError(t("auth.loginFailed"));
       }
