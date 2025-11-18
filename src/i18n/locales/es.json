@@ -14,7 +14,10 @@
     "connect": "Conectar",
     "connecting": "Conectando...",
     "successfullyAuthenticated": "Autenticado con éxito",
-    "loggedOutSuccessfully": "Sesión cerrada con éxito"
+    "loggedOutSuccessfully": "Sesión cerrada con éxito",
+    "invalidCredentials": "Invalid credentials. Please check your bearer token and try again.",
+    "serverUnreachable": "Server is unreachable. Please check your connection and server URL.",
+    "loginFailed": "Login failed. Please try again."
   },
   "map": {
     "searchPlaceholder": "Buscar un lugar...",
