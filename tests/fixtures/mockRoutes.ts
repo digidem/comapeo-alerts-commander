@@ -143,9 +143,21 @@ export async function setupInvalidCredentialsMock(page: Page) {
 
 /**
  * Mock geocoding service error
+ * Mocks both Mapbox and OpenStreetMap Nominatim to ensure proper error handling
+ * regardless of which service the app uses (depends on VITE_MAPBOX_TOKEN)
  */
 export async function setupGeocodingErrorMock(page: Page) {
+  // Mock Mapbox geocoding error
   await page.route('**/geocoding/**', async (route: Route) => {
+    await route.fulfill({
+      status: 503,
+      contentType: 'application/json',
+      body: JSON.stringify({ error: 'Geocoding service unavailable' }),
+    });
+  });
+
+  // Mock OpenStreetMap Nominatim error
+  await page.route('**/nominatim.openstreetmap.org/**', async (route: Route) => {
     await route.fulfill({
       status: 503,
       contentType: 'application/json',

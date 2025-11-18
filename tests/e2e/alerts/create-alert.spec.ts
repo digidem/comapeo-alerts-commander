@@ -1,6 +1,6 @@
 import { test, expect } from '../../fixtures/auth';
 import { MapPage } from '../../pages/MapPage';
-import { clearMocks, setupGeocodingErrorMock } from '../../fixtures/mockRoutes';
+import { setupGeocodingErrorMock } from '../../fixtures/mockRoutes';
 
 // TODO: Re-enable once map loading is fully stable (Phase 2)
 // API mocking is now in place (Phase 1 complete)
@@ -136,8 +136,7 @@ test.describe.skip('Error Handling', () => {
   test('should handle search errors gracefully', async ({ authenticatedPage: page }) => {
     const mapPage = new MapPage(page);
 
-    // Clear default mocks and set up geocoding error
-    await clearMocks(page);
+    // Set up geocoding error (keeps existing project/alert mocks)
     await setupGeocodingErrorMock(page);
 
     // Attempt search
