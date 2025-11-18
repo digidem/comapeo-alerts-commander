@@ -25,8 +25,13 @@ export async function setupDefaultMocks(page: Page) {
     const request = route.request();
     const authHeader = request.headers()['authorization'];
 
-    // Accept default test token from LoginPage.ts (test-token-123) or env var (valid-token)
-    const validTokens = ['Bearer test-token-123', 'Bearer valid-token'];
+    // Build valid tokens list:
+    // 1. Always accept default fallback token from LoginPage.ts
+    // 2. Accept configured TEST_BEARER_TOKEN if set (for custom test credentials)
+    const validTokens = ['Bearer test-token-123'];
+    if (process.env.TEST_BEARER_TOKEN) {
+      validTokens.push(`Bearer ${process.env.TEST_BEARER_TOKEN}`);
+    }
 
     if (!authHeader || !validTokens.includes(authHeader)) {
       await route.fulfill({
