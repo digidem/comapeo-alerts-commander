@@ -16,6 +16,10 @@ dotenv.config({ path: resolve(__dirname, '.env.test') });
 export default defineConfig({
   testDir: './tests/e2e',
 
+  /* Global setup/teardown for MSW */
+  globalSetup: resolve(__dirname, './tests/global-setup.ts'),
+  globalTeardown: resolve(__dirname, './tests/global-teardown.ts'),
+
   /* Run tests in files in parallel */
   fullyParallel: true,
 

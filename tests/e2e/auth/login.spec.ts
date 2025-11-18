@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { LoginPage } from '../../pages/LoginPage';
 import { MapPage } from '../../pages/MapPage';
+import { server, errorHandlers } from '../../fixtures/apiMocks';
 
 // Skip all tests in local environment where browser crashes
 // Tests will run in CI which has proper headless browser support
@@ -18,6 +19,11 @@ test.describe('User Authentication', () => {
     loginPage = new LoginPage(page);
   });
 
+  test.afterEach(() => {
+    // Reset MSW handlers to default after each test
+    server.resetHandlers();
+  });
+
   test('should display login form', async () => {
     // Verify form elements are visible
     await expect(loginPage.serverNameInput).toBeVisible();
@@ -31,9 +37,8 @@ test.describe('User Authentication', () => {
     await loginPage.expectLoginButtonDisabled();
   });
 
-  test.skip('should login successfully with valid credentials', async ({ page }) => {
-    // TODO: Re-enable once API mocking is set up
-    // Perform login
+  test('should login successfully with valid credentials', async ({ page }) => {
+    // Perform login with mocked API
     await loginPage.loginWithValidCredentials();
 
     // Verify successful login by waiting for map interface to appear
@@ -45,9 +50,8 @@ test.describe('User Authentication', () => {
     await expect(loginPage.serverNameInput).not.toBeVisible({ timeout: 5000 });
   });
 
-  test.skip('should persist session with remember me enabled', async ({ page }) => {
-    // TODO: Re-enable once API mocking is set up
-    // Login with remember me
+  test('should persist session with remember me enabled', async ({ page }) => {
+    // Login with remember me and mocked API
     await loginPage.loginWithValidCredentials(true);
 
     // Wait for map interface to appear (app uses component state, not URL routing)
@@ -67,9 +71,8 @@ test.describe('User Authentication', () => {
     }
   });
 
-  test.skip('should show error with invalid credentials', async () => {
-    // TODO: Re-enable once API mocking is set up
-    // Attempt login with invalid credentials
+  test('should show error with invalid credentials', async () => {
+    // Attempt login with invalid credentials (mocked API returns 401)
     await loginPage.loginWithInvalidCredentials();
 
     // Should show error message
@@ -79,10 +82,9 @@ test.describe('User Authentication', () => {
     await loginPage.expectURL(/^\/$/);
   });
 
-  test.skip('should show error when server is unreachable', async ({ page }) => {
-    // TODO: Re-enable once API mocking is set up
-    // Mock network failure
-    await page.route('**/api/**', (route) => route.abort('failed'));
+  test('should show error when server is unreachable', async ({ page }) => {
+    // Override with network error handler from MSW
+    server.use(errorHandlers.networkError);
 
     // Attempt login
     await loginPage.loginWithValidCredentials();
@@ -91,9 +93,8 @@ test.describe('User Authentication', () => {
     await loginPage.expectLoginError();
   });
 
-  test.skip('should clear form after failed login', async () => {
-    // TODO: Re-enable once error handling is verified
-    // Login with invalid credentials
+  test('should clear form after failed login', async () => {
+    // Login with invalid credentials (mocked API returns 401)
     await loginPage.loginWithInvalidCredentials();
     await loginPage.expectLoginError();
 
