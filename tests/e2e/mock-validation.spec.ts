@@ -19,17 +19,15 @@ test.describe('API Mock Validation', () => {
       }
     });
 
-    // Navigate to a base page first to establish origin
-    await page.goto('http://localhost:8080/', { waitUntil: 'domcontentloaded' }).catch(() => {
-      // If server not running, create a data URL page
-    });
+    // Navigate to base page (respects BASE_URL from config)
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
 
     // Create a simple HTML page that makes an API call
     await page.evaluate(() => {
       document.body.innerHTML = '<div id="result">Loading...</div>';
 
-      // Use absolute URL for fetch with default test token
-      fetch('http://localhost:8080/api/projects', {
+      // Use relative URL for fetch with default test token
+      fetch('/api/projects', {
         headers: {
           'Authorization': 'Bearer test-token-123'
         }
@@ -61,13 +59,13 @@ test.describe('API Mock Validation', () => {
   test('should return 401 for invalid credentials', async ({ page }) => {
     await setupDefaultMocks(page);
 
-    // Navigate to establish origin
-    await page.goto('http://localhost:8080/', { waitUntil: 'domcontentloaded' }).catch(() => {});
+    // Navigate to base page (respects BASE_URL from config)
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
 
     await page.evaluate(() => {
       document.body.innerHTML = '<div id="result">Loading...</div>';
 
-      fetch('http://localhost:8080/api/projects', {
+      fetch('/api/projects', {
         headers: {
           'Authorization': 'Bearer invalid-token'
         }
