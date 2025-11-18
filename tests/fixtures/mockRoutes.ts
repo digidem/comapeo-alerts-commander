@@ -25,7 +25,10 @@ export async function setupDefaultMocks(page: Page) {
     const request = route.request();
     const authHeader = request.headers()['authorization'];
 
-    if (!authHeader || authHeader !== 'Bearer valid-token') {
+    // Accept default test token from LoginPage.ts (test-token-123) or env var (valid-token)
+    const validTokens = ['Bearer test-token-123', 'Bearer valid-token'];
+
+    if (!authHeader || !validTokens.includes(authHeader)) {
       await route.fulfill({
         status: 401,
         contentType: 'application/json',

@@ -28,10 +28,10 @@ test.describe('API Mock Validation', () => {
     await page.evaluate(() => {
       document.body.innerHTML = '<div id="result">Loading...</div>';
 
-      // Use absolute URL for fetch
+      // Use absolute URL for fetch with default test token
       fetch('http://localhost:8080/api/projects', {
         headers: {
-          'Authorization': 'Bearer valid-token'
+          'Authorization': 'Bearer test-token-123'
         }
       })
       .then(r => r.json())
