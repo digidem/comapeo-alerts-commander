@@ -239,7 +239,10 @@ export const AlertForm = ({
       : selectedProjectNames.join(", ");
 
   return (
-    <div className="min-h-screen p-4 bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div
+      className="min-h-screen p-4 bg-gradient-to-br from-blue-50 to-indigo-100"
+      data-testid="alert-form"
+    >
       <div className="max-w-2xl mx-auto">
         <div className="flex items-center gap-4 mb-6">
           <Button
@@ -265,7 +268,11 @@ export const AlertForm = ({
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600">{t("alert.location")}</p>
-                  <p className="font-mono text-sm">
+                  <p
+                    className="font-mono text-sm"
+                    data-testid="coordinates-display"
+                    data-coordinates={`${coordinates.lat},${coordinates.lng}`}
+                  >
                     {coordinates.lat}, {coordinates.lng}
                   </p>
                 </div>
@@ -280,7 +287,7 @@ export const AlertForm = ({
                 </Button>
               </div>
 
-              <div>
+              <div data-testid="selected-projects-display">
                 <p className="text-sm text-gray-600">
                   {t("alert.selectedProjects", {
                     count: selectedProjects.length,
@@ -348,7 +355,10 @@ export const AlertForm = ({
                   {t("alert.slugFormatHelp")}
                 </p>
                 {alertName && !validateSlug(alertName) && (
-                  <p className="text-sm text-red-600">
+                  <p
+                    className="text-sm text-red-600"
+                    data-testid="alert-validation-error"
+                  >
                     {t("alert.invalidFormat")}
                   </p>
                 )}
@@ -356,7 +366,10 @@ export const AlertForm = ({
 
               {/* Error Message */}
               {errorMessage && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                <div
+                  className="bg-red-50 border border-red-200 rounded-lg p-3"
+                  data-testid="alert-error-message"
+                >
                   <p className="text-sm text-red-700">{errorMessage}</p>
                 </div>
               )}
@@ -369,6 +382,7 @@ export const AlertForm = ({
                   submissionState === "loading" || !validateSlug(alertName)
                 }
                 variant={getButtonVariant()}
+                data-testid="alert-submit-button"
               >
                 {getButtonContent()}
               </Button>
@@ -383,6 +397,7 @@ export const AlertForm = ({
                     setSubmissionState("idle");
                     setErrorMessage("");
                   }}
+                  data-testid="alert-retry-button"
                 >
                   {t("alert.tryAgain")}
                 </Button>

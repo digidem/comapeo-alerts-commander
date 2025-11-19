@@ -9,7 +9,7 @@ import {
 
 // Skip all tests in local environment where browser crashes
 // Tests will run in CI which has proper headless browser support
-test.skip(({ browserName }) => !process.env.CI, 'Skipping in local environment due to browser stability issues');
+test.skip(!process.env.CI, 'Skipping in local environment due to browser stability issues');
 
 test.describe('User Authentication', () => {
   let loginPage: LoginPage;
@@ -132,9 +132,12 @@ test.describe('User Authentication', () => {
   });
 });
 
-test.describe.skip('Logout', () => {
-  // TODO: Re-enable once map component loading is fixed
+// Phase 2: Map component stabilization complete
+test.describe('Logout', () => {
   test('should logout and return to login page', async ({ page }) => {
+    // Set up API mocks before navigation
+    await setupDefaultMocks(page);
+
     // Login first
     const loginPage = new LoginPage(page);
     await loginPage.navigate();
@@ -146,11 +149,14 @@ test.describe.skip('Logout', () => {
     await mapPage.logout();
 
     // Should be back on login page
-    await expect(page).toHaveURL('/');
+    await expect(page).toHaveURL(/\/$/);
     await expect(loginPage.loginButton).toBeVisible();
   });
 
   test('should clear localStorage on logout', async ({ page }) => {
+    // Set up API mocks before navigation
+    await setupDefaultMocks(page);
+
     // Login with remember me
     const loginPage = new LoginPage(page);
     await loginPage.navigate();

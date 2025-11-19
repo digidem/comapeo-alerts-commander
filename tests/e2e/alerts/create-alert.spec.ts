@@ -1,14 +1,22 @@
 import { test, expect } from '../../fixtures/auth';
 import { MapPage } from '../../pages/MapPage';
+import { ProjectSelectionPage } from '../../pages/ProjectSelectionPage';
+import { AlertFormPage } from '../../pages/AlertFormPage';
 import { setupGeocodingErrorMock } from '../../fixtures/mockRoutes';
 
-// TODO: Re-enable once map loading is fully stable (Phase 2)
-// API mocking is now in place (Phase 1 complete)
-test.describe.skip('Alert Creation Flow', () => {
+// Skip all tests in local environment where browser crashes
+// Tests will run in CI which has proper headless browser support
+test.skip(!process.env.CI, 'Skipping in local environment due to browser stability issues');
+
+// Phase 2: Map component stabilization complete
+// Tests use data-testid attributes for reliable map/marker detection
+test.describe('Alert Creation Flow', () => {
   // Note: No afterEach cleanup needed - routes are automatically cleared
   // when the page context is destroyed between tests
   test('should create alert for single project', async ({ authenticatedPage: page }) => {
     const mapPage = new MapPage(page);
+    const projectPage = new ProjectSelectionPage(page);
+    const alertPage = new AlertFormPage(page);
 
     // Step 1: Verify we're on the map page
     await mapPage.expectMapLoaded();
@@ -30,11 +38,32 @@ test.describe.skip('Alert Creation Flow', () => {
     await mapPage.expectContinueButtonEnabled();
     await mapPage.clickContinue();
 
-    // Step 6: Verify navigation to projects page
-    await expect(page).toHaveURL(/projects|select-projects/);
+    // Step 6: Select a project
+    await projectPage.expectProjectsLoaded();
+    await projectPage.expectProjectVisible('Test Project 1');
+    await projectPage.selectProject('Test Project 1');
+    await projectPage.expectProjectSelected('Test Project 1');
+    await projectPage.expectSelectedCount(1);
 
-    // TODO: Continue with project selection and form submission
-    // This requires ProjectSelectionPage and AlertFormPage to be implemented
+    // Step 7: Continue to alert form
+    await projectPage.expectContinueButtonEnabled();
+    await projectPage.continueToAlertForm();
+
+    // Step 8: Fill alert form
+    await alertPage.expectFormVisible();
+    await alertPage.expectCoordinatesDisplayed();
+    await alertPage.fillAlertForm({
+      alertName: 'test-alert-single',
+      sourceId: 'test-source-123',
+    });
+
+    // Step 9: Submit alert
+    await alertPage.expectSubmitButtonEnabled();
+    await alertPage.submitAlert();
+
+    // Step 10: Verify success and navigation back to map
+    await alertPage.waitForSuccessAndNavigation();
+    await mapPage.expectMapLoaded();
   });
 
   test('should create alert via location search', async ({ authenticatedPage: page }) => {
@@ -91,8 +120,8 @@ test.describe.skip('Alert Creation Flow', () => {
   });
 });
 
-// TODO: Re-enable once map loading is fully stable (Phase 2)
-test.describe.skip('Map Interactions', () => {
+// Phase 2: Map component stabilization complete
+test.describe('Map Interactions', () => {
   // Note: No afterEach cleanup needed - routes are automatically cleared
   // when the page context is destroyed between tests
   test('should show instruction text when no location selected', async ({ authenticatedPage: page }) => {
@@ -121,15 +150,15 @@ test.describe.skip('Map Interactions', () => {
     // Coordinates should be different
     expect(firstCoords.lat).not.toBeCloseTo(secondCoords.lat, 2);
 
-    // Should only have one marker
-    const markerCount = await page.locator('.mapboxgl-marker, .maplibregl-marker').count();
-    expect(markerCount).toBe(1);
+    // Should only have one selection marker (alert markers may also be present)
+    const selectionMarkerCount = await page.locator('[data-testid="selection-marker"]').count();
+    expect(selectionMarkerCount).toBe(1);
   });
 });
 
-// TODO: Re-enable once map loading is fully stable (Phase 2)
-// API mocking for error scenarios is now available
-test.describe.skip('Error Handling', () => {
+// Phase 2: Map component stabilization complete
+// API mocking for error scenarios is available
+test.describe('Error Handling', () => {
   // Note: No afterEach cleanup needed - routes are automatically cleared
   // when the page context is destroyed between tests
 

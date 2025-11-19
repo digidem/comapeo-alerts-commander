@@ -80,7 +80,10 @@ export const ProjectSelection = ({
         <Card className="w-full max-w-md">
           <CardContent className="pt-6">
             <div className="text-center space-y-4">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+              <div
+                className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"
+                data-testid="loading-indicator"
+              ></div>
               <p>{t("projects.loadingProjects")}</p>
             </div>
           </CardContent>
@@ -135,7 +138,10 @@ export const ProjectSelection = ({
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div
+      className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100"
+      data-testid="project-selection"
+    >
       {/* Mobile-first header */}
       <div
         className="bg-white/95 backdrop-blur-sm border-b border-gray-200 px-4 py-3"
@@ -181,6 +187,8 @@ export const ProjectSelection = ({
                   <div
                     key={project.projectId}
                     className="flex items-center space-x-3 p-4 border rounded-lg hover:bg-gray-50 transition-colors min-h-[60px]"
+                    data-testid={`project-row-${project.projectId}`}
+                    data-project-name={project.name}
                   >
                     <Checkbox
                       id={project.projectId}
@@ -189,6 +197,7 @@ export const ProjectSelection = ({
                         handleProjectToggle(project.projectId)
                       }
                       className="scale-125"
+                      data-testid={`project-checkbox-${project.projectId}`}
                     />
                     <Label
                       htmlFor={project.projectId}
@@ -201,8 +210,14 @@ export const ProjectSelection = ({
               </div>
 
               {selectedProjects.length > 0 && (
-                <div className="mt-6 p-4 bg-green-50 rounded-lg">
-                  <p className="text-sm text-green-700 mb-3">
+                <div
+                  className="mt-6 p-4 bg-green-50 rounded-lg"
+                  data-testid="selected-projects-summary"
+                >
+                  <p
+                    className="text-sm text-green-700 mb-3"
+                    data-testid="selected-projects-count"
+                  >
                     {t("projects.selected", {
                       count: selectedProjects.length,
                       plural: selectedProjects.length !== 1 ? "s" : "",
@@ -223,6 +238,8 @@ export const ProjectSelection = ({
                 onClick={handleContinue}
                 className="w-full mt-6 min-h-12 py-3 text-sm sm:text-base whitespace-normal"
                 disabled={selectedProjects.length === 0}
+                data-testid="continue-to-alert-button"
+                data-selected-count={selectedProjects.length}
               >
                 {t("projects.continueToAlert", {
                   count: selectedProjects.length,

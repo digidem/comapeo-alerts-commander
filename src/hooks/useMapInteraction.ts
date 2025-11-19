@@ -167,11 +167,20 @@ export const useMapInteraction = (
       const MarkerClass = mapboxgl.accessToken
         ? mapboxgl.Marker
         : maplibregl.Marker;
+
       markerRef.current = new MarkerClass({
         color: "#ef4444",
       })
         .setLngLat([selectedCoords.lng, selectedCoords.lat])
         .addTo(map);
+
+      // Add test-friendly attributes to the marker element
+      const markerElement = markerRef.current.getElement();
+      markerElement.setAttribute("data-testid", "selection-marker");
+      markerElement.setAttribute(
+        "data-coordinates",
+        `${selectedCoords.lng},${selectedCoords.lat}`,
+      );
     } else {
       // Remove marker if no coordinates
       if (markerRef.current) {
