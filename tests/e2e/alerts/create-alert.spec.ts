@@ -37,8 +37,11 @@ test.describe('Alert Creation Flow', () => {
     await mapPage.expectContinueButtonEnabled();
     await mapPage.clickContinue();
 
-    // Step 6: Verify navigation to projects page
-    await expect(page).toHaveURL(/projects|select-projects/);
+    // Step 6: Verify project selection UI appeared
+    // Note: App uses component state switching on "/" route, not separate URL routing
+    // clickContinue() already waits for "Back to Map" button which is unique to project selection
+    const backToMapButton = page.getByRole('button', { name: /back.*map/i });
+    await expect(backToMapButton).toBeVisible();
 
     // TODO: Continue with project selection and form submission
     // This requires ProjectSelectionPage and AlertFormPage to be implemented
