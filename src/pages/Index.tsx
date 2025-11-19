@@ -49,21 +49,33 @@ const Index = () => {
     // Check for stored credentials
     const stored = localStorage.getItem("mapAlert_credentials");
     if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        // Ensure rememberMe is set (for backwards compatibility with old stored credentials)
-        const credentials: Credentials = {
-          ...parsed,
-          rememberMe: parsed.rememberMe ?? true, // Default to true for stored credentials
-        };
-        setCredentials(credentials);
-        setIsAuthenticated(true);
-        setCurrentStep("map");
-        // Fetch projects immediately after restoring credentials
-        fetchProjects(credentials);
-      } catch (error) {
-        localStorage.removeItem("mapAlert_credentials");
-      }
+      // Use IIFE to handle async validation
+      (async () => {
+        try {
+          const parsed = JSON.parse(stored);
+          // Ensure rememberMe is set (for backwards compatibility with old stored credentials)
+          const credentials: Credentials = {
+            ...parsed,
+            rememberMe: parsed.rememberMe ?? true, // Default to true for stored credentials
+          };
+
+          // Validate credentials before auto-login (same as manual login flow)
+          await apiService.fetchProjects(credentials);
+
+          // Only if validation succeeds, proceed with auto-login
+          setCredentials(credentials);
+          setIsAuthenticated(true);
+          setCurrentStep("map");
+          // Fetch projects for the map view
+          await fetchProjects(credentials);
+        } catch (error) {
+          // If validation fails (expired token, server unreachable, etc.),
+          // clear stored credentials and stay on login screen
+          console.error("Stored credentials validation failed:", error);
+          localStorage.removeItem("mapAlert_credentials");
+          // No error toast - silent fallback to login screen for auto-login
+        }
+      })();
     }
   }, [fetchProjects]);
 
