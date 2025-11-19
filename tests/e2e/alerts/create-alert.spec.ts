@@ -128,9 +128,9 @@ test.describe('Map Interactions', () => {
     // Coordinates should be different
     expect(firstCoords.lat).not.toBeCloseTo(secondCoords.lat, 2);
 
-    // Should only have one marker
-    const markerCount = await page.locator('.mapboxgl-marker, .maplibregl-marker').count();
-    expect(markerCount).toBe(1);
+    // Should only have one selection marker (alert markers may also be present)
+    const selectionMarkerCount = await page.locator('[data-testid="selection-marker"]').count();
+    expect(selectionMarkerCount).toBe(1);
   });
 });
 
