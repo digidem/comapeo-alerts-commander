@@ -568,8 +568,10 @@ Update key components:
 | ProjectSelection | `loading-indicator` | Loading spinner |
 | AlertForm | `alert-form` | Container |
 | AlertForm | `coordinates-display` | Location coordinates |
+| AlertForm | `data-coordinates` | Coordinate data attribute |
 | AlertForm | `selected-projects-display` | Selected projects info |
 | AlertForm | `alert-submit-button` | Submit button |
+| AlertForm | `alert-retry-button` | Retry button |
 | AlertForm | `alert-error-message` | Submission error |
 | AlertForm | `alert-validation-error` | Validation error |
 

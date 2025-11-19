@@ -271,6 +271,7 @@ export const AlertForm = ({
                   <p
                     className="font-mono text-sm"
                     data-testid="coordinates-display"
+                    data-coordinates={`${coordinates.lat},${coordinates.lng}`}
                   >
                     {coordinates.lat}, {coordinates.lng}
                   </p>
@@ -396,6 +397,7 @@ export const AlertForm = ({
                     setSubmissionState("idle");
                     setErrorMessage("");
                   }}
+                  data-testid="alert-retry-button"
                 >
                   {t("alert.tryAgain")}
                 </Button>

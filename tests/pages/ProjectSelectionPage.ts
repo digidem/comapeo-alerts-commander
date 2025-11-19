@@ -91,7 +91,13 @@ export class ProjectSelectionPage extends BasePage {
    */
   async getSelectedProjectCount(): Promise<number> {
     const countAttr = await this.continueButton.getAttribute('data-selected-count');
-    return countAttr ? parseInt(countAttr, 10) : 0;
+    if (!countAttr) return 0;
+
+    const count = parseInt(countAttr, 10);
+    if (isNaN(count)) {
+      throw new Error(`Invalid selected count value: ${countAttr}`);
+    }
+    return count;
   }
 
   /**
@@ -99,9 +105,9 @@ export class ProjectSelectionPage extends BasePage {
    */
   async continueToAlertForm() {
     await this.continueButton.click();
-    // Wait for alert form to appear (look for form elements)
-    const alertNameInput = this.page.locator('#alertName');
-    await alertNameInput.waitFor({ state: 'visible', timeout: 10000 });
+    // Wait for alert form container to appear
+    const alertForm = this.page.locator('[data-testid="alert-form"]');
+    await alertForm.waitFor({ state: 'visible', timeout: 10000 });
   }
 
   /**
@@ -129,10 +135,11 @@ export class ProjectSelectionPage extends BasePage {
    */
 
   async expectProjectsLoaded() {
-    // Wait for loading to finish
-    await this.loadingIndicator.waitFor({ state: 'hidden', timeout: 10000 }).catch(() => {
-      // Ignore if loading indicator was never shown
-    });
+    // Wait for loading to finish if loading indicator exists
+    const loadingCount = await this.loadingIndicator.count();
+    if (loadingCount > 0) {
+      await this.loadingIndicator.waitFor({ state: 'hidden', timeout: 10000 });
+    }
     // Verify at least one checkbox is visible
     await this.getProjectCheckboxes().first().waitFor({ state: 'visible', timeout: 10000 });
   }
@@ -168,5 +175,14 @@ export class ProjectSelectionPage extends BasePage {
   async expectProjectCount(count: number) {
     const checkboxes = this.getProjectCheckboxes();
     await expect(checkboxes).toHaveCount(count);
+  }
+
+  async expectSelectedProjectsSummaryVisible() {
+    await expect(this.selectedProjectsSummary).toBeVisible();
+  }
+
+  async expectNoSelectedProjectsSummary() {
+    // Element is conditionally rendered, so check it doesn't exist
+    await expect(this.selectedProjectsSummary).toHaveCount(0);
   }
 }

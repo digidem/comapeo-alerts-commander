@@ -24,6 +24,7 @@ export class AlertFormPage extends BasePage {
   // Buttons
   readonly submitButton: Locator;
   readonly backButton: Locator;
+  readonly retryButton: Locator;
 
   // Feedback elements
   readonly validationError: Locator;
@@ -48,6 +49,7 @@ export class AlertFormPage extends BasePage {
     // Buttons
     this.submitButton = page.locator('[data-testid="alert-submit-button"]');
     this.backButton = page.getByRole('button', { name: /back/i });
+    this.retryButton = page.locator('[data-testid="alert-retry-button"]');
 
     // Validation error (inline format error for alert name)
     this.validationError = page.locator('[data-testid="alert-validation-error"]');
@@ -126,17 +128,15 @@ export class AlertFormPage extends BasePage {
    * Get the displayed coordinates from the summary section
    */
   async getDisplayedCoordinates(): Promise<{ lat: number; lng: number }> {
-    const text = await this.coordinatesDisplay.textContent();
-    if (!text) throw new Error('Coordinates not displayed');
+    const coordsAttr = await this.coordinatesDisplay.getAttribute('data-coordinates');
+    if (!coordsAttr) throw new Error('Coordinates not found in data attribute');
 
-    // Parse coordinates - they might be displayed as "lat: X, lng: Y" or "X, Y"
-    const matches = text.match(/([-]?\d+\.\d+)[^-\d]+([-]?\d+\.\d+)/);
-    if (!matches) throw new Error(`Cannot parse coordinates from: ${text}`);
+    const [lat, lng] = coordsAttr.split(',').map(Number);
+    if (isNaN(lat) || isNaN(lng)) {
+      throw new Error(`Invalid coordinates format: ${coordsAttr}`);
+    }
 
-    return {
-      lat: parseFloat(matches[1]),
-      lng: parseFloat(matches[2]),
-    };
+    return { lat, lng };
   }
 
   /**
@@ -212,6 +212,11 @@ export class AlertFormPage extends BasePage {
     if (message) {
       await expect(this.submissionError).toContainText(message);
     }
+  }
+
+  async expectNoSubmissionError() {
+    // Element is conditionally rendered, so check it doesn't exist
+    await expect(this.submissionError).toHaveCount(0);
   }
 
   async expectSuccessState() {
