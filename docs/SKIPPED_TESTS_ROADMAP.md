@@ -131,19 +131,16 @@ This document provides a prioritized roadmap to enable all remaining skipped tes
 **Unblocks:** 8 tests (53% coverage increase)
 **Complexity:** Medium
 
-#### Implementation Steps
+#### Implementation Steps (COMPLETED)
 
-**Step 1.1: Install MSW (Mock Service Worker)**
-```bash
-npm install -D msw@latest
-```
+> **Note:** The original plan proposed using MSW (Mock Service Worker), but the actual implementation uses Playwright's native `page.route()` API, which is simpler and doesn't require additional dependencies.
 
-**Step 1.2: Create Mock Fixtures**
-Create `tests/fixtures/apiMocks.ts`:
+**Step 1.1: Create Mock Fixtures with Playwright Routes**
+
+Created `tests/fixtures/mockRoutes.ts` with Playwright's native route handlers:
 
 ```typescript
-import { rest } from 'msw';
-import { setupServer } from 'msw/node';
+import { Page, Route } from '@playwright/test';
 
 // Mock data
 export const mockProjects = [
@@ -154,172 +151,120 @@ export const mockProjects = [
 export const mockAlerts = [
   {
     id: 'alert-1',
-    projectId: 'proj-1',
-    coordinates: [-0.1278, 51.5074],
-    message: 'Test alert',
-    createdAt: '2024-01-01',
+    metadata: { alert_type: 'fire-detection' },
+    geometry: { type: 'Point', coordinates: [-0.1278, 51.5074] },
+    detectionDateStart: '2024-01-01T00:00:00Z',
+    detectionDateEnd: '2024-01-01T23:59:59Z',
+    sourceId: 'source-123',
   },
 ];
 
-// Request handlers
-export const handlers = [
-  // Successful project fetch
-  rest.get('*/api/projects', (req, res, ctx) => {
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader || authHeader !== 'Bearer valid-token') {
-      return res(ctx.status(401), ctx.json({ error: 'Unauthorized' }));
+// Default success handlers
+export async function setupDefaultMocks(page: Page) {
+  // Mock successful project fetch with token validation
+  await page.route('**/api/projects', async (route: Route) => {
+    const authHeader = route.request().headers()['authorization'];
+    const validTokens = ['Bearer test-token-123'];
+    if (process.env.TEST_BEARER_TOKEN) {
+      validTokens.push(`Bearer ${process.env.TEST_BEARER_TOKEN}`);
     }
-    return res(ctx.status(200), ctx.json({ projects: mockProjects }));
-  }),
 
-  // Successful alert creation
-  rest.post('*/api/projects/:projectId/remoteDetectionAlerts', (req, res, ctx) => {
-    const { projectId } = req.params;
-    return res(
-      ctx.status(201),
-      ctx.json({
-        id: `alert-${Date.now()}`,
-        projectId,
-        ...req.body,
-      })
-    );
-  }),
+    if (!authHeader || !validTokens.includes(authHeader)) {
+      await route.fulfill({
+        status: 401,
+        contentType: 'application/json',
+        body: JSON.stringify({ error: 'Unauthorized' }),
+      });
+    } else {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ projects: mockProjects }),
+      });
+    }
+  });
 
-  // Geocoding mock
-  rest.get('*/geocoding/*', (req, res, ctx) => {
-    return res(
-      ctx.status(200),
-      ctx.json({
-        features: [
-          {
-            center: [-0.1278, 51.5074],
-            place_name: 'London, UK',
-          },
-        ],
-      })
-    );
-  }),
-];
+  // Mock geocoding (Mapbox and OSM Nominatim)
+  await page.route('**/geocoding/**', async (route: Route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        features: [{ center: [-0.1278, 51.5074], place_name: 'London, UK' }],
+      }),
+    });
+  });
+}
 
-// Error scenario handlers
-export const errorHandlers = {
-  networkError: rest.get('*/api/projects', (req, res) => {
-    return res.networkError('Failed to connect');
-  }),
+// Error scenario handlers (unroute defaults first)
+export async function setupGeocodingErrorMock(page: Page) {
+  // IMPORTANT: Unroute existing handlers first
+  try {
+    await page.unroute('**/geocoding/**');
+    await page.unroute('**/nominatim.openstreetmap.org/**');
+  } catch { /* ignore if not registered */ }
 
-  serverError: rest.get('*/api/projects', (req, res, ctx) => {
-    return res(ctx.status(500), ctx.json({ error: 'Internal server error' }));
-  }),
-
-  invalidCredentials: rest.get('*/api/projects', (req, res, ctx) => {
-    return res(ctx.status(401), ctx.json({ error: 'Invalid credentials' }));
-  }),
-};
-
-// Create test server
-export const server = setupServer(...handlers);
-```
-
-**Step 1.3: Configure MSW in Playwright**
-Update `playwright.config.ts`:
-
-```typescript
-import { defineConfig } from '@playwright/test';
-import { server } from './tests/fixtures/apiMocks';
-
-export default defineConfig({
-  // ... existing config
-
-  // Global setup/teardown for MSW
-  globalSetup: require.resolve('./tests/global-setup.ts'),
-  globalTeardown: require.resolve('./tests/global-teardown.ts'),
-});
-```
-
-Create `tests/global-setup.ts`:
-
-```typescript
-import { server } from './fixtures/apiMocks';
-
-export default function globalSetup() {
-  server.listen({ onUnhandledRequest: 'warn' });
-  console.log('🔧 MSW server started');
+  await page.route('**/geocoding/**', async (route: Route) => {
+    await route.fulfill({
+      status: 503,
+      contentType: 'application/json',
+      body: JSON.stringify({ error: 'Geocoding service unavailable' }),
+    });
+  });
 }
 ```
 
-Create `tests/global-teardown.ts`:
+**Step 1.2: Integrate with Auth Fixture**
+
+Updated `tests/fixtures/auth.ts` to automatically set up mocks:
 
 ```typescript
-import { server } from './fixtures/apiMocks';
+import { test as base, Page } from '@playwright/test';
+import { setupDefaultMocks } from './mockRoutes';
+import { LoginPage } from '../pages/LoginPage';
 
-export default function globalTeardown() {
-  server.close();
-  console.log('🔧 MSW server stopped');
-}
-```
+export const test = base.extend<{ authenticatedPage: Page }>({
+  authenticatedPage: async ({ page }, use) => {
+    // Set up API mocks before any requests
+    await setupDefaultMocks(page);
 
-**Step 1.4: Update Auth Tests**
-Modify `tests/e2e/auth/login.spec.ts`:
-
-```typescript
-import { test, expect } from '@playwright/test';
-import { LoginPage } from '../../pages/LoginPage';
-import { server, errorHandlers } from '../../fixtures/apiMocks';
-
-test.skip(({ browserName }) => !process.env.CI, 'Skipping locally');
-
-test.describe('User Authentication', () => {
-  test.beforeEach(async ({ page }) => {
+    // Navigate and log in
     await page.goto('/', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(1500);
-  });
-
-  test.afterEach(() => {
-    server.resetHandlers(); // Reset to default handlers
-  });
-
-  // Remove .skip() from these tests:
-  test('should login successfully with valid credentials', async ({ page }) => {
     const loginPage = new LoginPage(page);
-
-    // Use valid credentials (matches mock handler)
-    await loginPage.serverNameInput.fill('https://test-server.com');
-    await loginPage.bearerTokenInput.fill('valid-token');
-    await loginPage.loginButton.click();
-
-    // Verify successful login
-    const logoutButton = page.getByRole('button', { name: /logout|sign.*out/i });
-    await logoutButton.waitFor({ state: 'visible', timeout: 10000 });
-  });
-
-  test('should show error with invalid credentials', async ({ page }) => {
-    const loginPage = new LoginPage(page);
-
-    // Use invalid credentials
-    await loginPage.serverNameInput.fill('https://test-server.com');
-    await loginPage.bearerTokenInput.fill('invalid-token');
-    await loginPage.loginButton.click();
-
-    // Should show error message
-    await loginPage.expectLoginError();
-  });
-
-  test('should show error when server is unreachable', async ({ page }) => {
-    const loginPage = new LoginPage(page);
-
-    // Override with network error handler
-    server.use(errorHandlers.networkError);
-
     await loginPage.loginWithValidCredentials();
-    await loginPage.expectLoginError();
-  });
 
-  // ... enable remaining tests
+    // Wait for auth to complete
+    await page.waitForURL(/map|dashboard/, { timeout: 10000 });
+
+    await use(page);
+  },
+});
+
+export { expect } from '@playwright/test';
+```
+
+**Step 1.3: Update Tests to Use Error Mocks**
+
+Tests that need error scenarios import and call the error mock functions:
+
+```typescript
+import { test, expect } from '../../fixtures/auth';
+import { setupGeocodingErrorMock } from '../../fixtures/mockRoutes';
+
+test('should handle search errors gracefully', async ({ authenticatedPage: page }) => {
+  // Override default success handlers with error handlers
+  await setupGeocodingErrorMock(page);
+
+  // Test error handling...
 });
 ```
 
-**Step 1.5: Update Alert Tests**
-Similar updates to `tests/e2e/alerts/create-alert.spec.ts`
+**Key Implementation Details:**
+
+- **No external dependencies** - Uses Playwright's built-in `page.route()` API
+- **Route override pattern** - Error mocks call `page.unroute()` before adding new handlers
+- **Token configurability** - Mocks accept both default and custom `TEST_BEARER_TOKEN`
+- **GeoJSON format** - Alert mocks match real API structure for Phase 2 readiness
 
 **Success Criteria:**
 - ✅ All 8 API-dependent tests passing
@@ -696,11 +641,12 @@ npx playwright test tests/e2e/auth/login.spec.ts
 ```json
 {
   "devDependencies": {
-    "msw": "^2.x",
-    "@playwright/test": "^1.56.1" // already installed
+    "@playwright/test": "^1.56.1" // already installed - includes native route mocking
   }
 }
 ```
+
+> **Note:** The original plan suggested MSW (Mock Service Worker), but the actual implementation uses Playwright's built-in `page.route()` API which requires no additional dependencies.
 
 ### Environment Requirements
 - Node.js 20+
@@ -708,10 +654,10 @@ npx playwright test tests/e2e/auth/login.spec.ts
 - `.env.test` file with test configuration
 
 ### Knowledge Requirements
-- Understanding of MSW for API mocking
-- Playwright test architecture
+- Understanding of Playwright's `page.route()` API for request interception
+- Playwright test architecture and fixtures
 - Async JavaScript patterns
-- Map component behavior
+- Map component behavior (MapBox GL / MapLibre GL)
 
 ---
 

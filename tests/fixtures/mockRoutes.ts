@@ -127,8 +127,18 @@ export async function setupDefaultMocks(page: Page) {
 
 /**
  * Mock network error for API requests
+ *
+ * IMPORTANT: This function unroutes any existing /api/projects handler before adding
+ * error handlers, ensuring the error routes take precedence over default success routes.
  */
 export async function setupNetworkErrorMock(page: Page) {
+  // Unroute existing handler to ensure error handler takes precedence
+  try {
+    await page.unroute('**/api/projects');
+  } catch {
+    // Ignore errors if route wasn't registered
+  }
+
   await page.route('**/api/projects', async (route: Route) => {
     await route.abort('failed');
   });
@@ -136,8 +146,18 @@ export async function setupNetworkErrorMock(page: Page) {
 
 /**
  * Mock server error (500) for API requests
+ *
+ * IMPORTANT: This function unroutes any existing /api/projects handler before adding
+ * error handlers, ensuring the error routes take precedence over default success routes.
  */
 export async function setupServerErrorMock(page: Page) {
+  // Unroute existing handler to ensure error handler takes precedence
+  try {
+    await page.unroute('**/api/projects');
+  } catch {
+    // Ignore errors if route wasn't registered
+  }
+
   await page.route('**/api/projects', async (route: Route) => {
     await route.fulfill({
       status: 500,
@@ -149,8 +169,18 @@ export async function setupServerErrorMock(page: Page) {
 
 /**
  * Mock invalid credentials error (401)
+ *
+ * IMPORTANT: This function unroutes any existing /api/projects handler before adding
+ * error handlers, ensuring the error routes take precedence over default success routes.
  */
 export async function setupInvalidCredentialsMock(page: Page) {
+  // Unroute existing handler to ensure error handler takes precedence
+  try {
+    await page.unroute('**/api/projects');
+  } catch {
+    // Ignore errors if route wasn't registered
+  }
+
   await page.route('**/api/projects', async (route: Route) => {
     await route.fulfill({
       status: 401,
@@ -164,8 +194,21 @@ export async function setupInvalidCredentialsMock(page: Page) {
  * Mock geocoding service error
  * Mocks both Mapbox and OpenStreetMap Nominatim to ensure proper error handling
  * regardless of which service the app uses (depends on VITE_MAPBOX_TOKEN)
+ *
+ * IMPORTANT: This function unroutes any existing geocoding handlers before adding
+ * error handlers, ensuring the error routes take precedence over default success routes.
  */
 export async function setupGeocodingErrorMock(page: Page) {
+  // Unroute existing geocoding handlers to ensure error handlers take precedence
+  // Playwright evaluates routes in the order they were added (first wins),
+  // so we must remove the default success handlers before adding error handlers
+  try {
+    await page.unroute('**/geocoding/**');
+    await page.unroute('**/nominatim.openstreetmap.org/**');
+  } catch {
+    // Ignore errors if routes weren't registered
+  }
+
   // Mock Mapbox geocoding error
   await page.route('**/geocoding/**', async (route: Route) => {
     await route.fulfill({
@@ -187,8 +230,18 @@ export async function setupGeocodingErrorMock(page: Page) {
 
 /**
  * Mock alert creation error
+ *
+ * IMPORTANT: This function unroutes any existing alert handlers before adding
+ * error handlers, ensuring the error routes take precedence over default success routes.
  */
 export async function setupAlertCreationErrorMock(page: Page) {
+  // Unroute existing alert handler to ensure error handler takes precedence
+  try {
+    await page.unroute('**/api/projects/*/remoteDetectionAlerts');
+  } catch {
+    // Ignore errors if route wasn't registered
+  }
+
   await page.route('**/api/projects/*/remoteDetectionAlerts', async (route: Route) => {
     if (route.request().method() === 'POST') {
       await route.fulfill({
