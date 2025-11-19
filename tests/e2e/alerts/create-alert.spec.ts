@@ -4,10 +4,7 @@ import { setupGeocodingErrorMock } from '../../fixtures/mockRoutes';
 
 // Skip all tests in local environment where browser crashes
 // Tests will run in CI which has proper headless browser support
-test.skip(
-  ({ browserName }) => !process.env.CI,
-  'Skipping in local environment due to browser stability issues',
-);
+test.skip(!process.env.CI, 'Skipping in local environment due to browser stability issues');
 
 // Phase 2: Map component stabilization complete
 // Tests use data-testid attributes for reliable map/marker detection

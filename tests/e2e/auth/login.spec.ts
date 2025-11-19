@@ -9,7 +9,7 @@ import {
 
 // Skip all tests in local environment where browser crashes
 // Tests will run in CI which has proper headless browser support
-test.skip(({ browserName }) => !process.env.CI, 'Skipping in local environment due to browser stability issues');
+test.skip(!process.env.CI, 'Skipping in local environment due to browser stability issues');
 
 test.describe('User Authentication', () => {
   let loginPage: LoginPage;
