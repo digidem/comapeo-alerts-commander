@@ -203,7 +203,8 @@ export class AlertFormPage extends BasePage {
   }
 
   async expectNoValidationError() {
-    await expect(this.validationError).toBeHidden();
+    // Element is conditionally rendered, so check it doesn't exist
+    await expect(this.validationError).toHaveCount(0);
   }
 
   async expectSubmissionError(message?: string) {

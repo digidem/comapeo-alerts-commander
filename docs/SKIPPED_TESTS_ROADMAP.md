@@ -564,6 +564,8 @@ Update key components:
 | ProjectSelection | `project-checkbox-{id}` | Project checkboxes |
 | ProjectSelection | `selected-projects-summary` | Selection summary box |
 | ProjectSelection | `continue-to-alert-button` | Continue button |
+| ProjectSelection | `data-selected-count` | Selected count attribute |
+| ProjectSelection | `loading-indicator` | Loading spinner |
 | AlertForm | `alert-form` | Container |
 | AlertForm | `coordinates-display` | Location coordinates |
 | AlertForm | `selected-projects-display` | Selected projects info |

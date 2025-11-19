@@ -25,7 +25,7 @@ export class ProjectSelectionPage extends BasePage {
     this.logoutButton = page.getByRole('button', { name: /logout/i });
 
     // Loading state
-    this.loadingIndicator = page.locator('.animate-spin');
+    this.loadingIndicator = page.locator('[data-testid="loading-indicator"]');
 
     // Selected projects summary (green box showing count and names)
     this.selectedProjectsSummary = page.locator('[data-testid="selected-projects-summary"]');
@@ -90,12 +90,8 @@ export class ProjectSelectionPage extends BasePage {
    * Get the count of selected projects from the UI
    */
   async getSelectedProjectCount(): Promise<number> {
-    const buttonText = await this.continueButton.textContent();
-    if (!buttonText) return 0;
-
-    // Extract number from "Continue to Alert Form (X selected)"
-    const match = buttonText.match(/\((\d+)\s+selected\)/);
-    return match ? parseInt(match[1], 10) : 0;
+    const countAttr = await this.continueButton.getAttribute('data-selected-count');
+    return countAttr ? parseInt(countAttr, 10) : 0;
   }
 
   /**

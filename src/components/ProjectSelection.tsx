@@ -80,7 +80,10 @@ export const ProjectSelection = ({
         <Card className="w-full max-w-md">
           <CardContent className="pt-6">
             <div className="text-center space-y-4">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+              <div
+                className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"
+                data-testid="loading-indicator"
+              ></div>
               <p>{t("projects.loadingProjects")}</p>
             </div>
           </CardContent>
@@ -236,6 +239,7 @@ export const ProjectSelection = ({
                 className="w-full mt-6 min-h-12 py-3 text-sm sm:text-base whitespace-normal"
                 disabled={selectedProjects.length === 0}
                 data-testid="continue-to-alert-button"
+                data-selected-count={selectedProjects.length}
               >
                 {t("projects.continueToAlert", {
                   count: selectedProjects.length,
