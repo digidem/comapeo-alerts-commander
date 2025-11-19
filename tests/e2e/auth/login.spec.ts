@@ -149,7 +149,7 @@ test.describe('Logout', () => {
     await mapPage.logout();
 
     // Should be back on login page
-    await expect(page).toHaveURL('/');
+    await expect(page).toHaveURL(/\/$/);
     await expect(loginPage.loginButton).toBeVisible();
   });
 
