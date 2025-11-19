@@ -12,6 +12,9 @@ export interface AlertFormData {
  * Page Object for the Alert Form page
  */
 export class AlertFormPage extends BasePage {
+  // Container
+  readonly container: Locator;
+
   // Form inputs
   readonly startTimeInput: Locator;
   readonly endTimeInput: Locator;
@@ -33,6 +36,9 @@ export class AlertFormPage extends BasePage {
   constructor(page: Page) {
     super(page);
 
+    // Container
+    this.container = page.locator('[data-testid="alert-form"]');
+
     // Form inputs - use ID selectors for reliability
     this.startTimeInput = page.locator('#startTime');
     this.endTimeInput = page.locator('#endTime');
@@ -40,18 +46,18 @@ export class AlertFormPage extends BasePage {
     this.alertNameInput = page.locator('#alertName');
 
     // Buttons
-    this.submitButton = page.locator('button[type="submit"]');
+    this.submitButton = page.locator('[data-testid="alert-submit-button"]');
     this.backButton = page.getByRole('button', { name: /back/i });
 
     // Validation error (inline format error for alert name)
-    this.validationError = page.locator('.text-red-600, .text-destructive');
+    this.validationError = page.locator('[data-testid="alert-validation-error"]');
 
     // Submission error (red error box)
-    this.submissionError = page.locator('.bg-red-50');
+    this.submissionError = page.locator('[data-testid="alert-error-message"]');
 
     // Summary section elements
-    this.coordinatesDisplay = page.locator('text=/[-]?\\d+\\.\\d+.*,.*[-]?\\d+\\.\\d+/');
-    this.selectedProjectsDisplay = page.locator('text=/\\d+\\s+project/i');
+    this.coordinatesDisplay = page.locator('[data-testid="coordinates-display"]');
+    this.selectedProjectsDisplay = page.locator('[data-testid="selected-projects-display"]');
   }
 
   /**
@@ -148,7 +154,7 @@ export class AlertFormPage extends BasePage {
     // Wait for button to not be in "creating" state
     await this.page.waitForFunction(
       () => {
-        const button = document.querySelector('button[type="submit"]');
+        const button = document.querySelector('[data-testid="alert-submit-button"]');
         const text = button?.textContent?.toLowerCase() ?? '';
         return !text.includes('creating');
       },
@@ -163,7 +169,7 @@ export class AlertFormPage extends BasePage {
     // First wait for success state on button
     await this.page.waitForFunction(
       () => {
-        const button = document.querySelector('button[type="submit"]');
+        const button = document.querySelector('[data-testid="alert-submit-button"]');
         const text = button?.textContent?.toLowerCase() ?? '';
         return text.includes('success') || text.includes('created');
       },

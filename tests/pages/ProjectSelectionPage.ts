@@ -6,6 +6,7 @@ import { BasePage } from './BasePage';
  */
 export class ProjectSelectionPage extends BasePage {
   // Locators
+  readonly container: Locator;
   readonly backToMapButton: Locator;
   readonly continueButton: Locator;
   readonly logoutButton: Locator;
@@ -15,23 +16,33 @@ export class ProjectSelectionPage extends BasePage {
   constructor(page: Page) {
     super(page);
 
+    // Container
+    this.container = page.locator('[data-testid="project-selection"]');
+
     // Navigation buttons
     this.backToMapButton = page.getByRole('button', { name: /back.*map/i });
-    this.continueButton = page.getByRole('button', { name: /continue.*alert/i });
+    this.continueButton = page.locator('[data-testid="continue-to-alert-button"]');
     this.logoutButton = page.getByRole('button', { name: /logout/i });
 
     // Loading state
     this.loadingIndicator = page.locator('.animate-spin');
 
     // Selected projects summary (green box showing count and names)
-    this.selectedProjectsSummary = page.locator('.bg-green-50');
+    this.selectedProjectsSummary = page.locator('[data-testid="selected-projects-summary"]');
   }
 
   /**
    * Get all project checkboxes
    */
   getProjectCheckboxes(): Locator {
-    return this.page.getByRole('checkbox');
+    return this.page.locator('[data-testid^="project-checkbox-"]');
+  }
+
+  /**
+   * Get project row by name using data attribute
+   */
+  getProjectRow(projectName: string): Locator {
+    return this.page.locator(`[data-project-name="${projectName}"]`);
   }
 
   /**
