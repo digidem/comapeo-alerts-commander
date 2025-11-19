@@ -1,5 +1,7 @@
 import { test, expect } from '../../fixtures/auth';
 import { MapPage } from '../../pages/MapPage';
+import { ProjectSelectionPage } from '../../pages/ProjectSelectionPage';
+import { AlertFormPage } from '../../pages/AlertFormPage';
 import { setupGeocodingErrorMock } from '../../fixtures/mockRoutes';
 
 // Skip all tests in local environment where browser crashes
@@ -13,6 +15,8 @@ test.describe('Alert Creation Flow', () => {
   // when the page context is destroyed between tests
   test('should create alert for single project', async ({ authenticatedPage: page }) => {
     const mapPage = new MapPage(page);
+    const projectPage = new ProjectSelectionPage(page);
+    const alertPage = new AlertFormPage(page);
 
     // Step 1: Verify we're on the map page
     await mapPage.expectMapLoaded();
@@ -34,14 +38,32 @@ test.describe('Alert Creation Flow', () => {
     await mapPage.expectContinueButtonEnabled();
     await mapPage.clickContinue();
 
-    // Step 6: Verify project selection UI appeared
-    // Note: App uses component state switching on "/" route, not separate URL routing
-    // clickContinue() already waits for "Back to Map" button which is unique to project selection
-    const backToMapButton = page.getByRole('button', { name: /back.*map/i });
-    await expect(backToMapButton).toBeVisible();
+    // Step 6: Select a project
+    await projectPage.expectProjectsLoaded();
+    await projectPage.expectProjectVisible('Test Project 1');
+    await projectPage.selectProject('Test Project 1');
+    await projectPage.expectProjectSelected('Test Project 1');
+    await projectPage.expectSelectedCount(1);
 
-    // TODO: Continue with project selection and form submission
-    // This requires ProjectSelectionPage and AlertFormPage to be implemented
+    // Step 7: Continue to alert form
+    await projectPage.expectContinueButtonEnabled();
+    await projectPage.continueToAlertForm();
+
+    // Step 8: Fill alert form
+    await alertPage.expectFormVisible();
+    await alertPage.expectCoordinatesDisplayed();
+    await alertPage.fillAlertForm({
+      alertName: 'test-alert-single',
+      sourceId: 'test-source-123',
+    });
+
+    // Step 9: Submit alert
+    await alertPage.expectSubmitButtonEnabled();
+    await alertPage.submitAlert();
+
+    // Step 10: Verify success and navigation back to map
+    await alertPage.waitForSuccessAndNavigation();
+    await mapPage.expectMapLoaded();
   });
 
   test('should create alert via location search', async ({ authenticatedPage: page }) => {
