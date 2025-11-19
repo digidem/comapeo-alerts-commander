@@ -1,8 +1,12 @@
 import { test, expect } from '../../fixtures/auth';
 import { MapPage } from '../../pages/MapPage';
+import { setupGeocodingErrorMock } from '../../fixtures/mockRoutes';
 
-// TODO: Re-enable once map loading and API mocking is implemented
+// TODO: Re-enable once map loading is fully stable (Phase 2)
+// API mocking is now in place (Phase 1 complete)
 test.describe.skip('Alert Creation Flow', () => {
+  // Note: No afterEach cleanup needed - routes are automatically cleared
+  // when the page context is destroyed between tests
   test('should create alert for single project', async ({ authenticatedPage: page }) => {
     const mapPage = new MapPage(page);
 
@@ -87,8 +91,10 @@ test.describe.skip('Alert Creation Flow', () => {
   });
 });
 
-// TODO: Re-enable once map loading is implemented
+// TODO: Re-enable once map loading is fully stable (Phase 2)
 test.describe.skip('Map Interactions', () => {
+  // Note: No afterEach cleanup needed - routes are automatically cleared
+  // when the page context is destroyed between tests
   test('should show instruction text when no location selected', async ({ authenticatedPage: page }) => {
     const mapPage = new MapPage(page);
 
@@ -121,14 +127,17 @@ test.describe.skip('Map Interactions', () => {
   });
 });
 
-// TODO: Re-enable once map loading is implemented
+// TODO: Re-enable once map loading is fully stable (Phase 2)
+// API mocking for error scenarios is now available
 test.describe.skip('Error Handling', () => {
+  // Note: No afterEach cleanup needed - routes are automatically cleared
+  // when the page context is destroyed between tests
+
   test('should handle search errors gracefully', async ({ authenticatedPage: page }) => {
     const mapPage = new MapPage(page);
 
-    // Mock search API to fail
-    await page.route('**/geocoding/**', (route) => route.abort('failed'));
-    await page.route('**/nominatim.openstreetmap.org/**', (route) => route.abort('failed'));
+    // Set up geocoding error (keeps existing project/alert mocks)
+    await setupGeocodingErrorMock(page);
 
     // Attempt search
     await mapPage.searchLocation('Invalid Location');

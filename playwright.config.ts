@@ -85,9 +85,15 @@ export default defineConfig({
             '--no-sandbox',
             '--disable-web-security',
             '--disable-features=IsolateOrigins,site-per-process',
+            '--single-process', // Run in single process mode for stability
+            '--no-zygote', // Disable zygote process
+            '--disable-software-rasterizer',
+            '--disable-extensions',
             // NOTE: Do not add --disable-blink-features=AutomationControlled
             // We need navigator.webdriver to be set so SW registration is skipped
           ],
+          // Increase timeout for browser launch
+          timeout: 30000,
         },
       },
     },

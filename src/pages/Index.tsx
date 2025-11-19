@@ -21,6 +21,7 @@ const Index = () => {
   const [alertsRefreshKey, setAlertsRefreshKey] = useState(0);
   const [isLoadingProjects, setIsLoadingProjects] = useState(false);
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
+  const [loginError, setLoginError] = useState<string | null>(null);
 
   // Function to fetch projects
   const fetchProjects = useCallback(
@@ -48,37 +49,72 @@ const Index = () => {
     // Check for stored credentials
     const stored = localStorage.getItem("mapAlert_credentials");
     if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        // Ensure rememberMe is set (for backwards compatibility with old stored credentials)
-        const credentials: Credentials = {
-          ...parsed,
-          rememberMe: parsed.rememberMe ?? true, // Default to true for stored credentials
-        };
-        setCredentials(credentials);
-        setIsAuthenticated(true);
-        setCurrentStep("map");
-        // Fetch projects immediately after restoring credentials
-        fetchProjects(credentials);
-      } catch (error) {
-        localStorage.removeItem("mapAlert_credentials");
-      }
+      // Use IIFE to handle async validation
+      (async () => {
+        try {
+          const parsed = JSON.parse(stored);
+          // Ensure rememberMe is set (for backwards compatibility with old stored credentials)
+          const credentials: Credentials = {
+            ...parsed,
+            rememberMe: parsed.rememberMe ?? true, // Default to true for stored credentials
+          };
+
+          // Validate credentials before auto-login (same as manual login flow)
+          await apiService.fetchProjects(credentials);
+
+          // Only if validation succeeds, proceed with auto-login
+          setCredentials(credentials);
+          setIsAuthenticated(true);
+          setCurrentStep("map");
+          // Fetch projects for the map view
+          await fetchProjects(credentials);
+        } catch (error) {
+          // If validation fails (expired token, server unreachable, etc.),
+          // clear stored credentials and stay on login screen
+          console.error("Stored credentials validation failed:", error);
+          localStorage.removeItem("mapAlert_credentials");
+          // No error toast - silent fallback to login screen for auto-login
+        }
+      })();
     }
   }, [fetchProjects]);
 
   const handleLogin = async (creds: Credentials) => {
-    setCredentials(creds);
-    setIsAuthenticated(true);
-    setCurrentStep("map");
+    // Clear previous login errors
+    setLoginError(null);
 
-    if (creds.rememberMe) {
-      localStorage.setItem("mapAlert_credentials", JSON.stringify(creds));
+    try {
+      // Validate credentials by attempting to fetch projects
+      await apiService.fetchProjects(creds);
+
+      // If successful, proceed with login
+      setCredentials(creds);
+      setIsAuthenticated(true);
+      setCurrentStep("map");
+
+      if (creds.rememberMe) {
+        localStorage.setItem("mapAlert_credentials", JSON.stringify(creds));
+      }
+
+      toast.success(t("auth.successfullyAuthenticated"));
+
+      // Fetch projects for the map view
+      await fetchProjects(creds);
+    } catch (error: any) {
+      console.error("Login failed:", error);
+
+      // Set appropriate error message - check most specific errors first
+      if (error.response?.status === 401 || error.message?.includes("401") || error.message?.includes("Unauthorized")) {
+        setLoginError(t("auth.invalidCredentials"));
+      } else if (error.message?.includes("Network error")) {
+        setLoginError(t("auth.serverUnreachable"));
+      } else {
+        setLoginError(t("auth.loginFailed"));
+      }
+
+      // Re-throw to signal error to LoginForm
+      throw error;
     }
-
-    toast.success(t("auth.successfullyAuthenticated"));
-
-    // Fetch projects immediately after successful login
-    await fetchProjects(creds);
   };
 
   const handleLogout = () => {
@@ -122,7 +158,7 @@ const Index = () => {
   const renderCurrentStep = () => {
     switch (currentStep) {
       case "auth":
-        return <LoginForm onLogin={handleLogin} />;
+        return <LoginForm onLogin={handleLogin} error={loginError} />;
       case "map":
         return (
           <MapInterface

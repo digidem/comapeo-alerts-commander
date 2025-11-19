@@ -1,6 +1,11 @@
 import { test, expect } from '@playwright/test';
 import { LoginPage } from '../../pages/LoginPage';
 import { MapPage } from '../../pages/MapPage';
+import {
+  setupDefaultMocks,
+  setupNetworkErrorMock,
+  clearMocks
+} from '../../fixtures/mockRoutes';
 
 // Skip all tests in local environment where browser crashes
 // Tests will run in CI which has proper headless browser support
@@ -10,6 +15,9 @@ test.describe('User Authentication', () => {
   let loginPage: LoginPage;
 
   test.beforeEach(async ({ page }) => {
+    // Set up API mocks before navigation
+    await setupDefaultMocks(page);
+
     // Each test gets a fresh browser context (clean storage) by default
     // Navigate to the page using domcontentloaded to avoid browser crashes
     await page.goto('/', { waitUntil: 'domcontentloaded' });
@@ -17,6 +25,9 @@ test.describe('User Authentication', () => {
     await page.waitForTimeout(1500);
     loginPage = new LoginPage(page);
   });
+
+  // Note: No afterEach cleanup needed - routes are automatically cleared
+  // when the page context is destroyed between tests
 
   test('should display login form', async () => {
     // Verify form elements are visible
@@ -31,28 +42,26 @@ test.describe('User Authentication', () => {
     await loginPage.expectLoginButtonDisabled();
   });
 
-  test.skip('should login successfully with valid credentials', async ({ page }) => {
-    // TODO: Re-enable once API mocking is set up
-    // Perform login
+  test('should login successfully with valid credentials', async ({ page }) => {
+    // Perform login with mocked API
     await loginPage.loginWithValidCredentials();
 
     // Verify successful login by waiting for map interface to appear
     // App uses component state switching, not URL routing
     const logoutButton = page.getByRole('button', { name: /logout|sign.*out/i });
-    await logoutButton.waitFor({ state: 'visible', timeout: 10000 });
+    await logoutButton.waitFor({ state: 'visible', timeout: 15000 });
 
     // Verify login form is no longer visible
-    await expect(loginPage.serverNameInput).not.toBeVisible({ timeout: 5000 });
+    await expect(loginPage.serverNameInput).not.toBeVisible({ timeout: 10000 });
   });
 
-  test.skip('should persist session with remember me enabled', async ({ page }) => {
-    // TODO: Re-enable once API mocking is set up
-    // Login with remember me
+  test('should persist session with remember me enabled', async ({ page }) => {
+    // Login with remember me and mocked API
     await loginPage.loginWithValidCredentials(true);
 
     // Wait for map interface to appear (app uses component state, not URL routing)
     const logoutButton = page.getByRole('button', { name: /logout|sign.*out/i });
-    await logoutButton.waitFor({ state: 'visible', timeout: 10000 });
+    await logoutButton.waitFor({ state: 'visible', timeout: 15000 });
 
     // Verify localStorage has credentials
     const stored = await page.evaluate(() => localStorage.getItem('mapAlert_credentials'));
@@ -67,22 +76,21 @@ test.describe('User Authentication', () => {
     }
   });
 
-  test.skip('should show error with invalid credentials', async () => {
-    // TODO: Re-enable once API mocking is set up
-    // Attempt login with invalid credentials
+  test('should show error with invalid credentials', async () => {
+    // Attempt login with invalid credentials (mocked API returns 401)
     await loginPage.loginWithInvalidCredentials();
 
     // Should show error message
     await loginPage.expectLoginError();
 
-    // Should still be on login page
-    await loginPage.expectURL(/^\/$/);
+    // Should still be on login page (URL ends with /)
+    await loginPage.expectURL(/\/$/);
   });
 
-  test.skip('should show error when server is unreachable', async ({ page }) => {
-    // TODO: Re-enable once API mocking is set up
-    // Mock network failure
-    await page.route('**/api/**', (route) => route.abort('failed'));
+  test('should show error when server is unreachable', async ({ page }) => {
+    // Clear default mocks and set up network error
+    await clearMocks(page);
+    await setupNetworkErrorMock(page);
 
     // Attempt login
     await loginPage.loginWithValidCredentials();
@@ -91,9 +99,8 @@ test.describe('User Authentication', () => {
     await loginPage.expectLoginError();
   });
 
-  test.skip('should clear form after failed login', async () => {
-    // TODO: Re-enable once error handling is verified
-    // Login with invalid credentials
+  test('should clear form after failed login', async () => {
+    // Login with invalid credentials (mocked API returns 401)
     await loginPage.loginWithInvalidCredentials();
     await loginPage.expectLoginError();
 

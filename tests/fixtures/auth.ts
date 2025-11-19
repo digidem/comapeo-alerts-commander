@@ -1,5 +1,6 @@
 import { test as base, Page } from '@playwright/test';
 import { LoginPage } from '../pages/LoginPage';
+import { setupDefaultMocks } from './mockRoutes';
 
 /**
  * Extended test fixture that provides an authenticated page
@@ -13,8 +14,12 @@ type AuthFixtures = {
  */
 export const test = base.extend<AuthFixtures>({
   authenticatedPage: async ({ page }, use) => {
+    // Set up API mocks before navigation
+    await setupDefaultMocks(page);
+
     // Navigate to app
-    await page.goto('/');
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(1500);
 
     // Perform login
     const loginPage = new LoginPage(page);
