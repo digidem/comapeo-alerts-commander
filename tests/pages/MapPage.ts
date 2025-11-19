@@ -13,6 +13,8 @@ export class MapPage extends BasePage {
   // Locators
   readonly mapContainer: Locator;
   readonly marker: Locator;
+  readonly selectionMarker: Locator;
+  readonly alertMarker: Locator;
   readonly continueButton: Locator;
   readonly coordinateDisplay: Locator;
   readonly searchInput: Locator;
@@ -24,9 +26,14 @@ export class MapPage extends BasePage {
   constructor(page: Page) {
     super(page);
 
-    // Map locators - support both Mapbox and MapLibre
-    this.mapContainer = page.locator('.mapboxgl-map, .maplibregl-map').first();
-    this.marker = page.locator('.mapboxgl-marker, .maplibregl-marker').first();
+    // Map locators - use data attributes for reliable detection
+    this.mapContainer = page.locator('[data-testid="map-container"]');
+    // Selection marker (user-selected location)
+    this.selectionMarker = page.locator('[data-testid="selection-marker"]');
+    // Alert markers (from loaded alerts)
+    this.alertMarker = page.locator('[data-testid^="alert-marker-"]').first();
+    // Legacy marker selector for backward compatibility
+    this.marker = page.locator('[data-testid="selection-marker"], .mapboxgl-marker, .maplibregl-marker').first();
 
     // UI elements
     this.continueButton = page.getByRole('button', { name: /continue/i });
@@ -55,12 +62,26 @@ export class MapPage extends BasePage {
   }
 
   /**
-   * Wait for map to be fully loaded
+   * Wait for map to be fully loaded using data-map-loaded attribute
    */
-  async waitForMapLoad() {
-    await this.mapContainer.waitFor({ state: 'visible', timeout: 15000 });
-    // Wait for map tiles to load
-    await this.page.waitForTimeout(2000);
+  async waitForMapLoad(timeout = 30000) {
+    // Wait for map container to be visible
+    await this.mapContainer.waitFor({ state: 'visible', timeout });
+    // Wait for map to be fully loaded (data-map-loaded="true")
+    await this.page.waitForSelector('[data-map-loaded="true"]', {
+      state: 'attached',
+      timeout,
+    });
+    // Additional wait for tiles to render
+    await this.page.waitForTimeout(1000);
+  }
+
+  /**
+   * Check if map is loaded without waiting
+   */
+  async isMapLoaded(): Promise<boolean> {
+    const loadedAttr = await this.mapContainer.getAttribute('data-map-loaded');
+    return loadedAttr === 'true';
   }
 
   /**
@@ -154,10 +175,55 @@ export class MapPage extends BasePage {
   }
 
   /**
-   * Wait for marker to appear
+   * Wait for selection marker to appear
    */
-  async waitForMarker() {
-    await this.marker.waitFor({ state: 'visible', timeout: 5000 });
+  async waitForMarker(timeout = 10000) {
+    await this.selectionMarker.waitFor({ state: 'visible', timeout });
+  }
+
+  /**
+   * Wait for a specific alert marker by ID
+   */
+  async waitForAlertMarker(alertId: string, timeout = 10000) {
+    const marker = this.page.locator(`[data-testid="alert-marker-${alertId}"]`);
+    await marker.waitFor({ state: 'visible', timeout });
+    return marker;
+  }
+
+  /**
+   * Get coordinates from selection marker's data attribute
+   */
+  async getMarkerCoordinates(): Promise<Coordinates> {
+    const coordsAttr = await this.selectionMarker.getAttribute('data-coordinates');
+    if (!coordsAttr) throw new Error('Marker coordinates not found');
+    const [lng, lat] = coordsAttr.split(',').map(Number);
+    return { lat, lng };
+  }
+
+  /**
+   * Get coordinates from an alert marker
+   */
+  async getAlertMarkerCoordinates(alertId: string): Promise<Coordinates> {
+    const marker = this.page.locator(`[data-testid="alert-marker-${alertId}"]`);
+    const coordsAttr = await marker.getAttribute('data-coordinates');
+    if (!coordsAttr) throw new Error(`Alert marker ${alertId} coordinates not found`);
+    const [lng, lat] = coordsAttr.split(',').map(Number);
+    return { lat, lng };
+  }
+
+  /**
+   * Click on an alert marker
+   */
+  async clickAlertMarker(alertId: string) {
+    const marker = this.page.locator(`[data-testid="alert-marker-${alertId}"]`);
+    await marker.click();
+  }
+
+  /**
+   * Get count of visible alert markers
+   */
+  async getAlertMarkerCount(): Promise<number> {
+    return await this.page.locator('[data-testid^="alert-marker-"]').count();
   }
 
   /**
@@ -201,14 +267,20 @@ export class MapPage extends BasePage {
 
   async expectMapLoaded() {
     await expect(this.mapContainer).toBeVisible();
+    await expect(this.mapContainer).toHaveAttribute('data-map-loaded', 'true');
   }
 
   async expectMarkerVisible() {
-    await expect(this.marker).toBeVisible();
+    await expect(this.selectionMarker).toBeVisible();
   }
 
   async expectMarkerHidden() {
-    await expect(this.marker).toBeHidden();
+    await expect(this.selectionMarker).toBeHidden();
+  }
+
+  async expectAlertMarkersCount(count: number) {
+    const markers = this.page.locator('[data-testid^="alert-marker-"]');
+    await expect(markers).toHaveCount(count);
   }
 
   async expectCoordinatesDisplayed(coords: Coordinates, precision = 4) {

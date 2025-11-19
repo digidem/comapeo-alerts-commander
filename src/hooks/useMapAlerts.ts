@@ -79,6 +79,10 @@ export const useMapAlerts = (
 
         const el = document.createElement("div");
         el.className = "alert-marker";
+        // Add test-friendly attributes for reliable test automation
+        el.setAttribute("data-testid", `alert-marker-${alert.id}`);
+        el.setAttribute("data-alert-name", alert.name);
+        el.setAttribute("data-coordinates", `${lng},${lat}`);
         el.style.cssText = `
         background-color: #ef4444;
         width: 24px;

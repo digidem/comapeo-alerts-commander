@@ -132,8 +132,8 @@ test.describe('User Authentication', () => {
   });
 });
 
-test.describe.skip('Logout', () => {
-  // TODO: Re-enable once map component loading is fixed
+// Phase 2: Map component stabilization complete
+test.describe('Logout', () => {
   test('should logout and return to login page', async ({ page }) => {
     // Login first
     const loginPage = new LoginPage(page);

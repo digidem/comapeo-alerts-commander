@@ -27,7 +27,12 @@ export const MapContainer = memo<MapContainerProps>(
     return (
       <>
         {/* Full-screen map */}
-        <div ref={mapRef} className="absolute inset-0" />
+        <div
+          ref={mapRef}
+          className="absolute inset-0"
+          data-testid="map-container"
+          data-map-loaded={isMapLoaded ? "true" : "false"}
+        />
 
         {/* Loading overlay with skeleton */}
         {!isMapLoaded && (
