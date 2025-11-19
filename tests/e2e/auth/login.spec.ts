@@ -135,6 +135,9 @@ test.describe('User Authentication', () => {
 // Phase 2: Map component stabilization complete
 test.describe('Logout', () => {
   test('should logout and return to login page', async ({ page }) => {
+    // Set up API mocks before navigation
+    await setupDefaultMocks(page);
+
     // Login first
     const loginPage = new LoginPage(page);
     await loginPage.navigate();
@@ -151,6 +154,9 @@ test.describe('Logout', () => {
   });
 
   test('should clear localStorage on logout', async ({ page }) => {
+    // Set up API mocks before navigation
+    await setupDefaultMocks(page);
+
     // Login with remember me
     const loginPage = new LoginPage(page);
     await loginPage.navigate();
