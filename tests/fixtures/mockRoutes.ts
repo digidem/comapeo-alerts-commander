@@ -9,10 +9,29 @@ export const mockProjects = [
 export const mockAlerts = [
   {
     id: 'alert-1',
-    projectId: 'proj-1',
-    coordinates: [-0.1278, 51.5074],
-    message: 'Test alert',
-    createdAt: '2024-01-01',
+    metadata: {
+      alert_type: 'fire-detection',
+    },
+    geometry: {
+      type: 'Point' as const,
+      coordinates: [-0.1278, 51.5074] as [number, number],
+    },
+    detectionDateStart: '2024-01-01T00:00:00Z',
+    detectionDateEnd: '2024-01-01T23:59:59Z',
+    sourceId: 'source-123',
+  },
+  {
+    id: 'alert-2',
+    metadata: {
+      alert_type: 'deforestation',
+    },
+    geometry: {
+      type: 'Point' as const,
+      coordinates: [-0.0890, 51.5140] as [number, number],
+    },
+    detectionDateStart: '2024-01-02T00:00:00Z',
+    detectionDateEnd: '2024-01-02T23:59:59Z',
+    sourceId: 'source-456',
   },
 ];
 
